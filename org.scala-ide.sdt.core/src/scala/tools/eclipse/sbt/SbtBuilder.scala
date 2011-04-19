@@ -71,47 +71,13 @@ class SbtBuilder(project: ScalaProject) {
 
   var consoleOutputStream: OutputStream = _
   
-  
-  /** Escape sequences of the form <ESC>[12m. */
-  val escapePattern = """\e\[(\d\d?)(;\d\d?)*m""".r
-  
-  private def stripControlSequences(text: String): String =
-    escapePattern.replaceAllIn(text, m => "")
-  
   /** Launch the sbt process and route input and output through
    *  the Console object. Escape sequences are stripped form the output
    *  of Sbt.
    */
   def launchSbt() {
-    def filterStream(is: InputStream, f: String => String) = try {
-      val BUFSIZE = 80
-      val buff = new Array[Char](BUFSIZE)
-      val reader = new BufferedReader(new InputStreamReader(is))
-      val writer = new PrintWriter(new OutputStreamWriter(consoleOutputStream), true)
-      var size = reader.read(buff, 0, BUFSIZE)
-      var rest = ""
-        
-      while (size > 0) {
-        val str = rest + new String(buff, 0, size)
-        val lastNl = str.lastIndexOf('\n')
-        val (prefix, postfix) = str.splitAt(lastNl)
-
-        writer.print(f(prefix))
-        rest = postfix
-        
-        if (!rest.contains('\u001b')) {
-          writer.print(rest)
-          rest = ""
-        }
-        writer.flush()
-        size = reader.read(buff, 0, BUFSIZE)
-      }
-    } catch {
-      case e: IOException => () // do nothing
-    }
-    
     val pio = new ProcessIO(in => BasicIO.transferFully(console.getInputStream, in),
-                            os => filterStream(os, stripControlSequences),
+                            os => BasicIO.transferFully(os, consoleOutputStream),
                             es => BasicIO.transferFully(es, consoleOutputStream))
     
     try {
@@ -121,7 +87,7 @@ class SbtBuilder(project: ScalaProject) {
       val wkDir = project.underlying.getLocation()
       consoleOutputStream = console.newOutputStream()
       
-      val javaCmd = "java" :: sbtJavaArgs.value.split(' ').map(_.trim).toList ::: List("-jar", pathToSbt.value)
+      val javaCmd = "java" :: sbtJavaArgs.value.split(' ').map(_.trim).toList ::: List("-jar", "-Dsbt.log.noformat=true", pathToSbt.value)
       println("starting sbt in %s (%s)".format(wkDir.toString, javaCmd))
       shuttingDown = false
       val builder = Process(javaCmd.toArray, Some(project.underlying.getLocation().toFile))
