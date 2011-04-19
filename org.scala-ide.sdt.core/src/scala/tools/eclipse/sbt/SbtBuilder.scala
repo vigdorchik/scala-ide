@@ -89,9 +89,20 @@ class SbtBuilder(project: ScalaProject) {
       val reader = new BufferedReader(new InputStreamReader(is))
       val writer = new PrintWriter(new OutputStreamWriter(consoleOutputStream), true)
       var size = reader.read(buff, 0, BUFSIZE)
+      var rest = ""
+        
       while (size > 0) {
-        val str = new String(buff, 0, size)
-        writer.print(f(str))
+        val str = rest + new String(buff, 0, size)
+        val lastNl = str.lastIndexOf('\n')
+        val (prefix, postfix) = str.splitAt(lastNl)
+
+        writer.print(f(prefix))
+        rest = postfix
+        
+        if (!rest.contains('\u001b')) {
+          writer.print(rest)
+          rest = ""
+        }
         writer.flush()
         size = reader.read(buff, 0, BUFSIZE)
       }
