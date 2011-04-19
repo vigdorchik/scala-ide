@@ -1,5 +1,6 @@
 package scala.tools.eclipse.sbt
 
+import org.eclipse.jface.text.BadLocationException
 import scala.util.matching.Regex
 import org.eclipse.jface.resource.ImageDescriptor
 import org.eclipse.swt.custom.StyleRange
@@ -30,8 +31,7 @@ class SbtPartitioner(console: SbtConsole) extends IOConsolePartitioner(console.g
   
   lazy final val defaultStyle = (fgColor, bgColor)
 
-  
-  override def getStyleRanges(off: Int, length: Int): Array[StyleRange] = {
+  override def getStyleRanges(off: Int, length: Int): Array[StyleRange] = try {
     val part: IOConsolePartition = getPartition(off).asInstanceOf[IOConsolePartition];
     val offset = part.getOffset()
     val text = getDocument().get(offset, part.getLength)
@@ -46,6 +46,10 @@ class SbtPartitioner(console: SbtConsole) extends IOConsolePartitioner(console.g
   
       superStyles ++ styles.sortBy(_.start)
     } else new Array[StyleRange](0)
+  } catch {
+    case e: BadLocationException => 
+      // the user has cleared the console
+      super.getStyleRanges(off, length)
   }
   
   import SWT._
