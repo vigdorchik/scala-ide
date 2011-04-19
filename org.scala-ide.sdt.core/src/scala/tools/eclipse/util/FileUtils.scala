@@ -60,30 +60,34 @@ object FileUtils {
   def buildError(file : IFile, severity : Int, msg : String, offset : Int, length : Int, line : Int, monitor : IProgressMonitor) =
     file.getWorkspace.run(new IWorkspaceRunnable {
       def run(monitor : IProgressMonitor) = {
-        val mrk = file.createMarker(plugin.problemMarkerId)
-        mrk.setAttribute(IMarker.SEVERITY, severity)
-        
-        // Marker attribute values are limited to <= 65535 bytes and setAttribute will assert if they
-        // exceed this. To guard against this we trim to <= 21000 characters ... see
-        // org.eclipse.core.internal.resources.MarkerInfo.checkValidAttribute for justification
-        // of this arbitrary looking number
-        val maxMarkerLen = 21000
-        val trimmedMsg = msg.take(maxMarkerLen)
-        
-        val attrValue = trimmedMsg.map {
-          case '\n' | '\r' => ' '
-          case c => c
-        }
-        
-        mrk.setAttribute(IMarker.MESSAGE , attrValue)
-
+        val mrk = createMarker(file, severity, msg, line)
         if (offset != -1) {
           mrk.setAttribute(IMarker.CHAR_START, offset)
           mrk.setAttribute(IMarker.CHAR_END, offset + length + 1)
-          mrk.setAttribute(IMarker.LINE_NUMBER, line)
         }
       }
     }, monitor)
+
+  def createMarker(file: IFile, severity: Int, msg: String, line: Int): IMarker = {
+    val mrk = file.createMarker(plugin.problemMarkerId)
+    mrk.setAttribute(IMarker.SEVERITY, severity)
+
+    // Marker attribute values are limited to <= 65535 bytes and setAttribute will assert if they
+    // exceed this. To guard against this we trim to <= 21000 characters ... see
+    // org.eclipse.core.internal.resources.MarkerInfo.checkValidAttribute for justification
+    // of this arbitrary looking number
+    val maxMarkerLen = 21000
+    val trimmedMsg = msg.take(maxMarkerLen)
+
+    val attrValue = trimmedMsg.map {
+      case '\n' | '\r' => ' '
+      case c           => c
+    }
+
+    mrk.setAttribute(IMarker.MESSAGE, attrValue)
+    mrk.setAttribute(IMarker.LINE_NUMBER, line)
+    mrk
+  }
 
   def task(file : IFile, tag : String, msg : String, priority : String, offset : Int, length : Int, line : Int, monitor : IProgressMonitor) =
     file.getWorkspace.run(new IWorkspaceRunnable {

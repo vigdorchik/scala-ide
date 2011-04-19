@@ -31,7 +31,8 @@ object IDESettings {
   }
   
   def pluginSettings: List[Box] = {
-    List(Box("Scala Plugin Debugging", List(YPlugininfo)))    
+    List(Box("Scala Plugin Debugging", List(YPlugininfo)),
+         Box("Sbt", List(pathToSbt, sbtJavaArgs)))
   }
   
   def buildManagerSettings: List[Box] = {
@@ -42,4 +43,6 @@ object IDESettings {
 object ScalaPluginSettings extends Settings {
   val YPlugininfo = BooleanSetting("-plugininfo", "Enable logging of the Scala Plugin info")
   val buildManager = ChoiceSetting("-buildmanager", "which", "Build manager to use", List("refined"), "refined")
+  val pathToSbt    = StringSetting("-pathToSbt", "path", "The full path to sbt-launch.jar", "/usr/bin/sbt-launch.jar")
+  val sbtJavaArgs  = StringSetting("-sbtJavaArgs", "", "Additional JVM arguments", "-Xmx1000M")
 }

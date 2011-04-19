@@ -196,6 +196,15 @@
          tooltip="Report a bug in the Scala Development Tools"
          class="scala.tools.eclipse.actions.RunDiagnosticAction"
          enablesFor="*">
+       </action>
+       <action
+             class="scala.tools.eclipse.sbt.ShowSbtConsoleAction"
+             enablesFor="*"
+             id="org.scala-ide.sdt.ui.runSbt"
+             label="Show Sbt Console"
+             menubarPath="project/additions"
+             style="toggle"
+             tooltip="Show the Sbt console for project">
        </action>       
      </actionSet>
    </extension>

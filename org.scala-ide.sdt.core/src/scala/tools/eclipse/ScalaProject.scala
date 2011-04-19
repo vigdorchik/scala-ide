@@ -5,6 +5,7 @@
 
 package scala.tools.eclipse
 
+import scala.tools.eclipse.sbt.SbtBuilder
 import scala.collection.immutable.Set
 import scala.collection.mutable.{ LinkedHashSet, HashMap, HashSet }
 
@@ -34,6 +35,8 @@ class ScalaProject(val underlying: IProject) {
   private var hasBeenBuilt = false
   private val resetPendingLock = new Object
   private var resetPending = false
+  
+  val sbtConsole = new SbtBuilder(this)
 
   case class InvalidCompilerSettings() extends RuntimeException(
         "Scala compiler cannot initialize for project: " + underlying.getName +
@@ -517,6 +520,11 @@ class ScalaProject(val underlying: IProject) {
     hasBeenBuilt = false
   }
 
+  def preClose() {
+    resetCompilers()
+    sbtConsole.dispose()
+  }
+  
   def resetCompilers(implicit monitor: IProgressMonitor = null) = {
     println("resetting compilers!  project: " + this.toString)
     resetBuildCompiler

@@ -164,7 +164,7 @@ class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IEl
             case Some(scalaProject) =>
               projects.remove(project)
               println("resetting compilers for " + project.getName)
-              scalaProject.resetCompilers
+              scalaProject.preClose()
             case None =>
           }
         }
