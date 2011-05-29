@@ -51,13 +51,9 @@ hash()
 {
   git log -1 --pretty=format:"-%h"
 }
-milestone()
-{
-  git log --decorate -1 | grep 'tag:' | sed -e 's/^.*tag: \(M[^,]*\).*$/-\1/'
-}
 qualifier()
 {
-  echo $(timestamp)$(current_branch)$(milestone)
+  echo $(timestamp)$(current_branch)
 }
 build()
 {
