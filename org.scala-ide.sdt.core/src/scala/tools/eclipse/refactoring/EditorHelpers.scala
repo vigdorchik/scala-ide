@@ -24,6 +24,10 @@ import org.eclipse.core.resources.IFile
 import scala.tools.eclipse.ScalaSourceFileEditor
 import org.eclipse.jface.text.ITextSelection
 import scala.tools.eclipse.javaelements.ScalaSourceFile
+import org.eclipse.jface.text.link.LinkedModeModel
+import org.eclipse.jface.text.link.LinkedPositionGroup
+import org.eclipse.jface.text.link.LinkedPosition
+import org.eclipse.jface.text.link.LinkedModeUI
 
 object EditorHelpers {
    
@@ -32,6 +36,7 @@ object EditorHelpers {
   def activeEditor(p: IWorkbenchPage): Option[IEditorPart] = if(p.isEditorAreaVisible) Some(p.getActiveEditor) else None
   def textEditor(e: IEditorPart): Option[ScalaSourceFileEditor] = e match {case t: ScalaSourceFileEditor => Some(t) case _ => None}
   def file(e: ITextEditor): Option[IFile] = e.getEditorInput match {case f: IFileEditorInput => Some(f.getFile) case _ => None}
+  def scalaSourceFile(e: ITextEditor) : Option[ScalaSourceFile] = file(e).flatMap{ f => ScalaSourceFile.createFromPath(f) }
   def selection(e: ITextEditor): Option[ITextSelection] = e.getSelectionProvider.getSelection match {case s: ITextSelection => Some(s) case _ => None}
   def currentEditor : Option[ScalaSourceFileEditor] = {
     for {
@@ -41,7 +46,7 @@ object EditorHelpers {
       te <- textEditor(ae)
     } yield te
   }
-  
+
   def withCurrentScalaSourceFile[T](block: ScalaSourceFile => T): Option[T] = {
     for {
       textEditor <- currentEditor
@@ -49,12 +54,11 @@ object EditorHelpers {
       scalaFile <- ScalaSourceFile.createFromPath(f)
     } yield block(scalaFile)
   }
-  
+    
   def withScalaFileAndSelection[T](block: (ScalaSourceFile, ITextSelection) => Option[T]): Option[T] = {
     for {
       textEditor <- currentEditor
-      f <- file(textEditor)
-      scalaFile <- ScalaSourceFile.createFromPath(f)
+      scalaFile <- scalaSourceFile(textEditor)
       selection <- selection(textEditor)
       back <- block(scalaFile, selection) 
     } yield back
@@ -131,6 +135,32 @@ object EditorHelpers {
             None
           }
       }
+    }
+  }
+  
+  def applyRefactoringChangeToEditor(change: Change, editor: ScalaSourceFileEditor) = {
+    val edit = new ReplaceEdit(change.from, change.to - change.from, change.text)
+    val document = editor.getDocumentProvider.getDocument(editor.getEditorInput)
+    edit.apply(document)
+  }
+  
+  /**
+   * Enters the editor in the LinkedModeUI with the given list of positions.
+   * A position is given as an offset and the length.
+   */
+  def enterLinkedModeUi(ps: List[(Int, Int)]) {
+    
+    for( editor <- currentEditor) {
+        
+      val model = new LinkedModeModel {
+        this addGroup new LinkedPositionGroup {
+          val document = editor.getDocumentProvider.getDocument(editor.getEditorInput)
+          ps foreach (p => addPosition(new LinkedPosition(document, p._1, p._2)))
+        }
+        forceInstall
+      }
+
+      (new LinkedModeUI(model, editor.sourceViewer)).enter
     }
   }
 }

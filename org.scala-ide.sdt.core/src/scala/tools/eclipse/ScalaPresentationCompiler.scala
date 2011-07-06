@@ -9,7 +9,7 @@ import scala.tools.eclipse.util.Tracer
 import scala.collection.mutable
 import org.eclipse.jdt.core.compiler.IProblem
 import org.eclipse.jdt.internal.compiler.problem.{ DefaultProblem, ProblemSeverities }
-import scala.tools.nsc.interactive.{Global, InteractiveReporter, Problem}
+import scala.tools.nsc.interactive.{Global, InteractiveReporter, Problem, FreshRunReq}
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.util.{ BatchSourceFile, Position, SourceFile }
@@ -65,7 +65,7 @@ class ScalaPresentationCompiler(settings : Settings)
         Nil
     }
     Tracer.println("problems of " + file + " : " + b.size)
-    b
+    b.toList
   }
   
   //def problemsOf(scu : IFile) : List[IProblem] = problemsOf(FileUtils.toAbstractFile(scu))
@@ -106,6 +106,23 @@ class ScalaPresentationCompiler(settings : Settings)
     }
     op(tree)
   }
+  /** Perform `op' on the compiler thread. Catch all exceptions, and return 
+   *  None if an exception occured. TypeError and FreshRunReq are printed to
+   *  stdout, all the others are logged in the platform error log.
+   */
+  def askOption[A](op: () => A): Option[A] =
+    try Some(ask(op))
+    catch {
+      case e: TypeError =>
+        println("TypeError in ask:\n" + e)
+        None
+      case f: FreshRunReq =>
+        println("FreshRunReq in ask:\n" + f)
+        None
+      case e =>
+        ScalaPlugin.plugin.logError("Error during askOption", e)
+        None
+    }
   
   def askReload(scu : AbstractFile, content : Array[Char]) {
     Tracer.println("askReload 3: " + scu)
@@ -120,14 +137,24 @@ class ScalaPresentationCompiler(settings : Settings)
 //    }
   }
   
+  def filesDeleted(files : List[AbstractFile]) {
+    Tracer.println("files deleted:\n" + (files map (_.path) mkString "\n"))
+    synchronized {
+      val srcs = files.map(sourceFiles remove _).foldLeft(List[SourceFile]()) {
+        case (acc, None) => acc
+        case (acc, Some(f)) => f::acc
+      }
+      if (!srcs.isEmpty)
+        askFilesDeleted(srcs, new Response[Unit])
+    }
+  }
+
   def discardSourceFile(scu : AbstractFile) {
     Tracer.println("discarding " + scu)
-	synchronized {
-      sourceFiles.get(scu) match {
-        case None =>
-        case Some(source) =>
-          removeUnitOf(source)
-          sourceFiles.remove(scu)
+    synchronized {
+      for (source <- sourceFiles.get(scu)) {
+        removeUnitOf(source)
+        sourceFiles.remove(scu)
       }
     }
   }

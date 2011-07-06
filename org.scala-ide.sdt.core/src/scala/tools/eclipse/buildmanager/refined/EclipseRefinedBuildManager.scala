@@ -27,12 +27,18 @@ class EclipseRefinedBuildManager(val project: ScalaProject, settings0: Settings)
       new Run {
         var lastWorked = 0
         var savedTotal = 0
-        
-//BACK-2.8        
+      
+//BACK-2.8
+//        var throttledMessages = 0
+//
 //        override def informUnitStarting(phase: Phase, unit: CompilationUnit) {
-//          val unitPath: IPath = Path.fromOSString(unit.source.path)
-//          monitor.subTask("phase " + phase.name + " for " + unitPath.makeRelativeTo(projectPath))
-//        }
+//          throttledMessages += 1
+//          if (throttledMessages == 10) {
+//            throttledMessages = 0
+//            val unitPath: IPath = Path.fromOSString(unit.source.path)
+//            monitor.subTask("phase " + phase.name + " for " + unitPath.makeRelativeTo(projectPath))
+//          }
+//        }        
 
         override def progress(current: Int, total: Int) {
           if (monitor.isCanceled) {
@@ -107,7 +113,7 @@ class EclipseRefinedBuildManager(val project: ScalaProject, settings0: Settings)
     toBuild flatMap targets foreach {
       case EclipseResource(f) =>
         //BACK-e35
-        //f.setDerived(true, monitor)
+        //f.setDerived(true, , null) // don't report progress on setting derived attributes, as the UI is slower than the operation
         f.setDerived(true)
       case _ =>
     }

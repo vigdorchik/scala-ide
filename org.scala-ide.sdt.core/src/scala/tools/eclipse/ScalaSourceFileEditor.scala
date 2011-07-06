@@ -38,13 +38,16 @@ import org.eclipse.ui.IEditorInput
 import org.eclipse.jface.util.IPropertyChangeListener
 import org.eclipse.jface.util.PropertyChangeEvent
 import org.eclipse.jface.action.Action
+import org.eclipse.jface.action.MenuManager
+import org.eclipse.jface.action.IContributionItem
+import org.eclipse.jface.action.Separator
 
 class ScalaSourceFileEditor extends CompilationUnitEditor with ScalaEditor {
 
   import ScalaSourceFileEditor._
 
   setPartName("Scala Editor")
-
+  
   override protected def createActions() {
     super.createActions()
 
@@ -108,9 +111,7 @@ class ScalaSourceFileEditor extends CompilationUnitEditor with ScalaEditor {
   //   * @throws CoreException
   //   */
   //  protected override def doSetInput(input: IEditorInput) = Defensive.askRunOutOfMain("ScalaSourceFileEditor.doSetInput") { super.doSetInput(input) }
-
   private[eclipse] def sourceViewer = getSourceViewer
-
   override def updateOccurrenceAnnotations(selection: ITextSelection, astRoot: CompilationUnit) = ScalaPlugin.plugin.updateOccurrenceAnnotationsService.askUpdateOccurrenceAnnotations(this, selection, astRoot)
   def superUpdateOccurrenceAnnotations(selection: ITextSelection, astRoot: CompilationUnit) = {} //super.updateOccurrenceAnnotations(selection, astRoot)
 
@@ -133,26 +134,6 @@ class ScalaSourceFileEditor extends CompilationUnitEditor with ScalaEditor {
     ScalaPlugin.plugin.updateOccurrenceAnnotationsService.uninstallSelectionListener(getEditorSite)
     //super.uninstallOccurrencesFinder
   }
-  
-  override def createPartControl(parent: Composite) {
-    super.createPartControl(parent)
-    val viewer = getSourceViewer()
-    if (viewer ne null) {
-      
-      //FIXME : workaround for my limited knowledge about current presentation compiler
-      JavaPlugin.getDefault().getWorkingCopyManager().getWorkingCopy(getEditorInput()) match {
-        case scu : ScalaCompilationUnit => viewer.getDocument().addPrenotifiedDocumentListener(ScalaTypeAutoCompletionProposalManager.getProposalFor(scu))
-        case _ => ()
-      }
-    }
-
-    refactoring.RefactoringMenu.fillQuickMenu(this)
-  }
-
-  override def editorContextMenuAboutToShow(menu: org.eclipse.jface.action.IMenuManager): Unit = {
-    super.editorContextMenuAboutToShow(menu)
-    refactoring.RefactoringMenu.fillContextMenu(menu, this)
-  }
 
   // override to public scope (from protected)
   override def getElementAt(offset: Int, reconcile: Boolean) = super.getElementAt(offset, reconcile)
@@ -169,12 +150,68 @@ class ScalaSourceFileEditor extends CompilationUnitEditor with ScalaEditor {
     ScalaPlugin.plugin.getPreferenceStore.removePropertyChangeListener(preferenceListener)
   }
 
+  override def editorContextMenuAboutToShow(menu: org.eclipse.jface.action.IMenuManager): Unit = {
+    super.editorContextMenuAboutToShow(menu)
+
+    //refactoring.RefactoringMenu.fillContextMenu(menu, this)
+    def groupMenuItemsByGroupId(items: Seq[IContributionItem]) = {
+      // the different groups (as indicated by separators) and 
+      // contributions in a menu are originally just a flat list
+      items.foldLeft(Nil: List[(String, List[IContributionItem])]) {
+        
+        // start a new group
+        case (others, group: Separator) => (group.getId, Nil) :: others
+          
+        // append contribution to the current group
+        case ((group, others) :: rest, element) => (group, element :: others) :: rest
+          
+        // the menu does not start with a group, this shouldn't happen, but if
+        // it does we just skip this element, so it will stay in the menu.
+        case (others, _) => others
+      } toMap
+    }
+    
+    def findJdtSourceMenuManager(items: Seq[IContributionItem]) = {
+      items.collect {
+        case mm: MenuManager if mm.getId == "org.eclipse.jdt.ui.source.menu" => mm
+      }
+    }
+    
+    findJdtSourceMenuManager(menu.getItems) foreach { mm =>
+              
+      val groups = groupMenuItemsByGroupId(mm.getItems)
+      
+      // these two contributions won't work on Scala files, so we remove them
+      val blacklist = List("codeGroup", "importGroup")
+      
+      // and provide our own organize imports instead
+      mm.appendToGroup("importGroup", new refactoring.OrganizeImportsAction { setText("Organize Imports") })
+      
+      blacklist.flatMap(groups.get).flatten.foreach(mm.remove)
+    }
+    
+    refactoring.RefactoringMenu.fillContextMenu(menu, this)
+  }
+  
+  override def createPartControl(parent: org.eclipse.swt.widgets.Composite) {
+    super.createPartControl(parent)
+    refactoring.RefactoringMenu.fillQuickMenu(this)
+//    val viewer = getSourceViewer()
+//    if (viewer ne null) {
+//      //FIXME : workaround for my limited knowledge about current presentation compiler
+//      JavaPlugin.getDefault().getWorkingCopyManager().getWorkingCopy(getEditorInput()) match {
+//        case scu : ScalaCompilationUnit => viewer.getDocument().addPrenotifiedDocumentListener(ScalaTypeAutoCompletionProposalManager.getProposalFor(scu))
+//        case _ => ()
+//      }
+//    }
+  }
+
 }
 
 object ScalaSourceFileEditor {
 
-  val EDITOR_BUNDLE_FOR_CONSTRUCTED_KEYS = "org.eclipse.ui.texteditor.ConstructedEditorMessages"
-  val bundleForConstructedKeys = ResourceBundle.getBundle(EDITOR_BUNDLE_FOR_CONSTRUCTED_KEYS)
+  private val EDITOR_BUNDLE_FOR_CONSTRUCTED_KEYS = "org.eclipse.ui.texteditor.ConstructedEditorMessages"
+  private val bundleForConstructedKeys = ResourceBundle.getBundle(EDITOR_BUNDLE_FOR_CONSTRUCTED_KEYS)
 
   val SCALA_EDITOR_SCOPE = "scala.tools.eclipse.scalaEditorScope"
 }

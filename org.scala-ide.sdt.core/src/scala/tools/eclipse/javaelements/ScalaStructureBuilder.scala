@@ -46,9 +46,14 @@ trait ScalaStructureBuilder { self : ScalaPresentationCompiler =>
       }
 
     type OverrideInfo = Int
-    val overrideInfos = (new collection.mutable.HashMap[Symbol, OverrideInfo]{
-      override def default ( key : Symbol ) = 0
-    })//.withDefaultValue(0)
+//    val overrideInfos = (new collection.mutable.HashMap[Symbol, OverrideInfo]).withDefaultValue(0)
+    // COMPAT: backwards compatible with 2.8. Remove once we drop 2.8 (and use withDefaultValue).
+    val overrideInfos = new collection.mutable.HashMap[Symbol, OverrideInfo] {
+      override def get(key: Symbol) = super.get(key) match {
+        case None => Some(0)
+        case v => v
+      }
+    } 
     
     def fillOverrideInfos(c : Symbol) {
       if (c ne NoSymbol) {
@@ -296,7 +301,7 @@ trait ScalaStructureBuilder { self : ScalaPresentationCompiler =>
           resolveDuplicates(importElem)
         
           val importElemInfo = new ImportDeclarationElementInfo
-          setSourceRange0(importElemInfo, pos.startOrPoint, pos.endOrPoint)
+          setSourceRange0(importElemInfo, pos.startOrPoint, pos.endOrPoint/*-1*/)
         
           val children = getChildren(importContainerInfo)
           if (children.isEmpty)
@@ -347,7 +352,7 @@ trait ScalaStructureBuilder { self : ScalaPresentationCompiler =>
             val tpElementInfo = new TypeParameterElementInfo
             val parents = tp.info.parents
             if (!parents.isEmpty) {
-              //BACK-Galileo : value boundsSignatures is not a member of org.eclipse.jdt.internal.core.TypeParameterElementInfo
+              //BACK-e35 : value boundsSignatures is not a member of org.eclipse.jdt.internal.core.TypeParameterElementInfo
               // tpElementInfo.boundsSignatures = parents.map(_.typeSymbol.fullName.toCharArray).toArray 
               tpElementInfo.bounds = parents.map(_.typeSymbol.name.toChars).toArray
             }
@@ -376,7 +381,7 @@ trait ScalaStructureBuilder { self : ScalaPresentationCompiler =>
           (start0, start0 + name.length - 1)
         } else {
           val start0 = parentTree.pos.point
-          (start0, start0)
+          (start0, start0/*-1*/)
         }
         
         classElemInfo.setNameSource0(start, end)
@@ -646,7 +651,7 @@ trait ScalaStructureBuilder { self : ScalaPresentationCompiler =>
               // disable subtraction if iSetter, can introduce end < start, why 4 ??
               start+defElem.labelName.length-1//-(if (sym.isSetter) 4 else 0)
           } else {
-              start
+              start // -1
           }
           defElemInfo.setNameSource0(start, end)
           setSourceRange(defElemInfo, sym, annotsPos)
@@ -727,8 +732,8 @@ trait ScalaStructureBuilder { self : ScalaPresentationCompiler =>
   
           // pos.startOrPoint can == pos.endOrPoint == pos.point
           info.nameStart = annot.pos.startOrPoint
-          info.nameEnd = annot.pos.endOrPoint
-          setSourceRange0(info, info.nameStart, info.nameEnd)
+          info.nameEnd = annot.pos.endOrPoint /*-1*/
+          setSourceRange0(info, info.nameStart/*-1*/, info.nameEnd)
   
           val memberValuePairs = annot.assocs
           val membersLength = memberValuePairs.length

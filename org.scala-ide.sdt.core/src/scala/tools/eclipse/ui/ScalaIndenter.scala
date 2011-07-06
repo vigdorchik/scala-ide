@@ -720,7 +720,7 @@ class ScalaIndenter(
    * @return the reference statement relative to which <code>position</code>
    *         should be indented, or {@link JavaHeuristicScanner#NOT_FOUND}
    */
-  def findReferencePosition(offset : Int, danglingElse : Boolean, matchBrace : Boolean, matchParen : Boolean, matchCase : Boolean, matchBracket : Boolean) : Int = {
+  def findReferencePosition(offset: Int, danglingElse: Boolean, matchBrace: Boolean, matchParen: Boolean, matchCase: Boolean, matchBracket: Boolean): Int = {
     import JavaHeuristicScanner._
     
     fIndent = 0 // the indentation modification
@@ -1158,12 +1158,12 @@ class ScalaIndenter(
           }
         }
 
-        if ((fToken == Symbols.TokenIDENT && !isGenericStarter) || 
-            fToken == Symbols.TokenQUESTIONMARK ||
-            fToken == Symbols.TokenGREATERTHAN) {
-          
-            if (skipScope(Symbols.TokenLESSTHAN, Symbols.TokenGREATERTHAN))
-              return true
+        if ((fToken == Symbols.TokenIDENT && !isGenericStarter) ||
+          fToken == Symbols.TokenQUESTIONMARK ||
+          fToken == Symbols.TokenGREATERTHAN) {
+
+          if (skipScope(Symbols.TokenLESSTHAN, Symbols.TokenGREATERTHAN))
+            return true
         }
         // <> are harder to detect - restore the position if we fail
         fPosition = storedPosition

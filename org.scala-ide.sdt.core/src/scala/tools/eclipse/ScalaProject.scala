@@ -44,10 +44,7 @@ class ScalaProject(val underlying: IProject) {
         Tracer.println("create a new ScalaPresentationCompiler for " + underlying.getName )
         val settings = new Settings({x => ScalaPlugin.plugin.logWarning(x, None)})
         settings.printtypes.tryToSet(Nil)
-        settings.verbose.tryToSetFromPropertyValue("true")
-        settings.XlogImplicits.tryToSetFromPropertyValue("true")
-        //TODO replace the if by a conditional Extension Point (or better)
-        initialize(settings, _.name.startsWith("-Ypresentation"))
+        initialize(settings, isPCSetting(settings))
         val compiler = if (IDESettings.exceptionOnCreatePresentationCompiler.value) {
           throw new Exception("exceptionOnCreatePresentationCompiler == true")
         } else  if (Info.scalaVersion.startsWith("2.9")) {
@@ -64,7 +61,7 @@ class ScalaProject(val underlying: IProject) {
           plugin.logError(ex)
           throw ex
         case ex =>
-          failedCompilerInitialization("failed to initialize Scala compiler properly : "+ ex.getMessage)
+          failedCompilerInitialization("error initializing Scala compiler properly : "+ ex.getMessage)
           plugin.logError(ex)
           throw ex
       }
@@ -72,6 +69,25 @@ class ScalaProject(val underlying: IProject) {
 
     override def destroy(compiler : ScalaPresentationCompiler) {
       compiler.destroy()
+    }
+
+    /** Compiler settings that are honored by the presentation compiler. */
+    private def isPCSetting(settings: Settings): Set[Settings#Setting] = {
+      import settings.{ plugin => pluginSetting, _ }
+      Set(deprecation, 
+        unchecked, 
+        pluginOptions, 
+        verbose,
+        Xexperimental, 
+        future, 
+        Xmigration28, 
+        pluginSetting,
+        pluginsDir,
+        YpresentationDebug, 
+        YpresentationVerbose, 
+        YpresentationLog, 
+        YpresentationReplay, 
+        YpresentationDelay)
     }
 
     private def failedCompilerInitialization(msg: String) {
@@ -263,8 +279,9 @@ class ScalaProject(val underlying: IProject) {
       res.refreshLocal(IResource.DEPTH_INFINITE, null)
   }
 
-
-  def initialize(settings : Settings, filter: Settings#Setting => Boolean) = {
+  def newSettings(filter: Settings#Setting => Boolean) : Settings = initialize(new Settings({x => ScalaPlugin.plugin.logWarning(x, None)}), filter)
+  
+  def initialize(settings : Settings, filter: Settings#Setting => Boolean) : Settings = {
     val sfs = sourcesFoldersInfo
     sfs.foreach { cpe =>
       settings.outputDirs.add(EclipseResource(toIFolder(cpe)), EclipseResource(toOutput(cpe)))
@@ -307,6 +324,8 @@ class ScalaProject(val underlying: IProject) {
     Tracer.println("sourcepath : " + settings.sourcepath.value)
     Tracer.println("classpath  : " + settings.classpath.value)
     Tracer.println("outputdirs : " + settings.outputDirs.outputs)
+    
+    settings
   }
   
   private def buildManagerInitialize: String =

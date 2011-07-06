@@ -5,6 +5,7 @@
 
 package scala.tools.eclipse.javaelements
 
+
 import org.eclipse.jdt.internal.compiler.classfmt.ClassFileConstants
 //BACK-2.8 import scala.reflect.generic.HasFlags
 
@@ -41,27 +42,6 @@ trait ScalaJavaMapper { self : ScalaPresentationCompiler =>
   }
 
   //BACK-2.8 def mapModifiers(owner : HasFlags) : Int = {
-  def mapModifiers(owner : Modifiers) : Int = {
-    var jdtMods = 0
-    if(owner.hasFlag(Flags.PRIVATE))
-      jdtMods = jdtMods | ClassFileConstants.AccPrivate
-    else if(owner.hasFlag(Flags.PROTECTED))
-      jdtMods = jdtMods | ClassFileConstants.AccProtected
-    else
-      jdtMods = jdtMods | ClassFileConstants.AccPublic
-    
-    if(owner.hasFlag(Flags.ABSTRACT) || owner.hasFlag(Flags.DEFERRED))
-      jdtMods = jdtMods | ClassFileConstants.AccAbstract
-
-    if(owner.isFinal || owner.hasFlag(Flags.MODULE))
-      jdtMods = jdtMods | ClassFileConstants.AccFinal
-    
-    if(owner.isTrait)
-      jdtMods = jdtMods | ClassFileConstants.AccInterface
-    
-    jdtMods
-  }
-
   def mapModifiers(owner : Symbol) : Int = {
     var jdtMods = 0
     if(owner.hasFlag(Flags.PRIVATE))
@@ -83,6 +63,31 @@ trait ScalaJavaMapper { self : ScalaPresentationCompiler =>
     jdtMods
   }
 
+  /** Overload that needs to go away when 'HasFlag' can be used, either as a
+   *  structural type -- see #4560, or by sticking to 2.9.0 that has this trait
+   */
+  def mapModifiers(owner: Modifiers) : Int = {
+    var jdtMods = 0
+    if(owner.hasFlag(Flags.PRIVATE))
+      jdtMods = jdtMods | ClassFileConstants.AccPrivate
+    else if(owner.hasFlag(Flags.PROTECTED))
+      jdtMods = jdtMods | ClassFileConstants.AccProtected
+    else
+      jdtMods = jdtMods | ClassFileConstants.AccPublic
+    
+    if(owner.hasFlag(Flags.ABSTRACT) || owner.hasFlag(Flags.DEFERRED))
+      jdtMods = jdtMods | ClassFileConstants.AccAbstract
+
+    if(owner.isFinal || owner.hasFlag(Flags.MODULE))
+      jdtMods = jdtMods | ClassFileConstants.AccFinal
+    
+    if(owner.isTrait)
+      jdtMods = jdtMods | ClassFileConstants.AccInterface
+    
+    jdtMods
+  }
+
+  
   def mapType(s : Symbol) : String = {
     (if(s == null || s == NoSymbol || s.isRefinementClass || s.owner.isRefinementClass)
         "scala.AnyRef"
@@ -173,5 +178,15 @@ trait ScalaJavaMapper { self : ScalaPresentationCompiler =>
       }
         
     enclosing(sym).reverse
+  }
+  
+  /** Return the enclosing package. Correctly handle the empty package, by returning
+   *  the empty string, instead of <empty>. */
+  def enclosingPackage(sym: Symbol): String = {
+    val enclPackage = sym.enclosingPackage
+    if (enclPackage == definitions.EmptyPackage || enclPackage == definitions.RootPackage)
+      ""
+    else
+      enclPackage.fullName
   }
 }

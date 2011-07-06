@@ -24,6 +24,8 @@ import org.eclipse.swt.graphics.Color
 import org.eclipse.ui.{ IEditorInput, IFileEditorInput, PlatformUI, IPartListener, IWorkbenchPart, IWorkbenchPage, IPageListener, IEditorPart }
 import org.eclipse.ui.part.FileEditorInput
 import org.eclipse.ui.plugin.AbstractUIPlugin
+import util.SWTUtils.asyncExec
+
 import org.osgi.framework.BundleContext
 import scala.tools.eclipse.javaelements.{ ScalaElement, ScalaSourceFile }
 import scala.tools.eclipse.util.OSGiUtils.pathInBundle
@@ -35,19 +37,20 @@ import org.eclipse.core.runtime.NullProgressMonitor
 
 object ScalaPlugin {
   var plugin: ScalaPlugin = _
-
-  /** Returns the active workbench shell, or null if one does not exist */
-  def getShell: Shell = {
+  
+  def getWorkbenchWindow = {
     val workbench = PlatformUI.getWorkbench
-    var window =
-      Option(workbench.getActiveWorkbenchWindow) orElse workbench.getWorkbenchWindows.headOption
-    window.map { _.getShell }.orNull
+    Option(workbench.getActiveWorkbenchWindow) orElse workbench.getWorkbenchWindows.headOption
   }
+  
+  def getShell: Shell = getWorkbenchWindow map (_.getShell) orNull
 }
 
 class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IElementChangedListener with IPartListener {
   ScalaPlugin.plugin = this
 
+  final val HEADLESS_TEST  = "sdtcore.headless"
+  
   def pluginId = "org.scala-ide.sdt.core"
   def compilerPluginId = "org.scala-ide.scala.compiler"
   def libraryPluginId = "org.scala-ide.scala.library"
@@ -100,55 +103,25 @@ class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IEl
   lazy val templateManager = new ScalaTemplateManager()
   lazy val updateOccurrenceAnnotationsService = new UpdateOccurrenceAnnotationsService()
 
-  val pageListener = new IPageListener {
-  	def pageOpened(page: IWorkbenchPage) {
-        page.addPartListener(ScalaPlugin.this)
-  	}
-  	
-  	def pageClosed(page: IWorkbenchPage) {
-  	  page.removePartListener(ScalaPlugin.this)
-  	}
-  	
-  	def pageActivated(page: IWorkbenchPage) {}
-  }
-
   private val projects = new HashMap[IProject, ScalaProject]
 
   override def start(context: BundleContext) = {
     super.start(context)
 
-    ResourcesPlugin.getWorkspace.addResourceChangeListener(this, IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.POST_CHANGE)
-    JavaCore.addElementChangedListener(this)
-    val workbench = getWorkbench 
-    workbench.getEditorRegistry.setDefaultEditor("*.scala", editorId)
-    //FIXME Maybe the code is never raise as .getActiveWorkbenchWindow is null in start/stop context
-    JobUtils.askRunInUI {
-      val window = workbench.getActiveWorkbenchWindow()
-      if (window != null) {
-        window.addPageListener(pageListener)
-        window.getActivePage().addPartListener(ScalaPlugin.this)
-        // already register for open editors
-//          for (
-//            page <- window.getPages();  
-//            editorRef <- page.getEditorReferences()
-//          ) {
-//            partOpened(editorRef.getEditor(true))
-//          }
-      } else {
-        logWarning("can't register IPartListener, because getActiveWorkbenchWindow == null")
-      }
+    if (System.getProperty(HEADLESS_TEST) eq null) {
+      ResourcesPlugin.getWorkspace.addResourceChangeListener(this, IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.POST_CHANGE)
+      JavaCore.addElementChangedListener(this)
+      PlatformUI.getWorkbench.getEditorRegistry.setDefaultEditor("*.scala", editorId)
+      ScalaPlugin.getWorkbenchWindow map (_.getPartService().addPartListener(ScalaPlugin.this))
+
+      PerspectiveFactory.updatePerspective
+      diagnostic.StartupDiagnostics.run
     }
     Tracer.println("Scala compiler bundle: " + scalaCompilerBundle.getLocation)
-    PerspectiveFactory.updatePerspective
-    diagnostic.StartupDiagnostics.run
   }
 
   override def stop(context: BundleContext) = {
     ResourcesPlugin.getWorkspace.removeResourceChangeListener(this)
-    JobUtils.askRunInJob("build error", Job.INTERACTIVE){
-      //FIXME Maybe the code is never raise as .getActiveWorkbenchWindow is null in start/stop context
-      Option(getWorkbench.getActiveWorkbenchWindow).foreach{ _.removePageListener(pageListener) }
-    }
     super.stop(context)
   }
 
@@ -213,12 +186,14 @@ class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IEl
   private def processDelta(delta: IJavaElementDelta) {    
     import IJavaElement._    
     import IJavaElementDelta._
-
+    import scala.collection.mutable.ListBuffer
+    
     val isChanged = delta.getKind == CHANGED
     val isRemoved = delta.getKind == REMOVED
     def hasFlag(flag: Int) = (delta.getFlags & flag) != 0
 
     val elem = delta.getElement
+    val toDelete = new ListBuffer[ScalaSourceFile]
     val processChildren: Boolean = elem.getElementType match {
       case JAVA_MODEL => true
       case JAVA_PROJECT if !isRemoved && !hasFlag(F_CLOSED) => true
@@ -233,21 +208,23 @@ class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IEl
           false
         } else true
 
-      case PACKAGE_FRAGMENT => true
+        case PACKAGE_FRAGMENT => true
 
       case COMPILATION_UNIT if elem.isInstanceOf[ScalaSourceFile] && isRemoved =>
-        val project = elem.getJavaProject.getProject
-        if (project.isOpen) {
-          getScalaProject(project).
-            withPresentationCompilerIfExists { _.discardSourceFile(elem.asInstanceOf[ScalaSourceFile].file) } 
-        }
+        toDelete += elem.asInstanceOf[ScalaSourceFile]
         false
-
       case _ => false
     }
-
     if (processChildren)
       delta.getAffectedChildren foreach { processDelta(_) }
+    if(!toDelete.isEmpty) {
+      for (
+        (project, srcs) <- toDelete.toList.groupBy( _.getJavaProject.getProject ) ;
+        if (project.isOpen)
+      ) {
+        getScalaProject(project).withPresentationCompilerIfExists { _.filesDeleted(srcs.map(_.file)) }
+      }
+    }
   }
 
   def logInfo(msg : String, t : Option[Throwable] = None) : Unit = log(IStatus.INFO, msg, t)
@@ -310,11 +287,13 @@ class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IEl
   def partDeactivated(part: IWorkbenchPart) {}
   def partBroughtToTop(part: IWorkbenchPart) {}
   def partOpened(part: IWorkbenchPart) {
+    Tracer.println("open " + part.getTitle)
     doWithCompilerAndFile(part) { (compiler, ssf) =>
       compiler.askReload(ssf.file, ssf.getContents)
     }
   }
   def partClosed(part: IWorkbenchPart) {
+    Tracer.println("close " + part.getTitle)
     doWithCompilerAndFile(part) { (compiler, ssf) =>
       compiler.discardSourceFile(ssf.file)
     }
@@ -327,11 +306,12 @@ class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IEl
         editor.getEditorInput match {
           case fei: FileEditorInput =>
             val f = fei.getFile
-            if (f.exists && (f.getFileExtension() == "scala")) {
-              for (ssf <- ScalaSourceFile.createFromPath(Option(f))) {
+            if (f.getName.endsWith(scalaFileExtn)) {
+              for (ssf <- ScalaSourceFile.createFromPath(f.getFullPath.toString)) {
             	  val proj = getScalaProject(f.getProject)
                 if (proj.underlying.isOpen) {
-            	    proj.withPresentationCompiler(op(_, ssf)) ()
+                  proj.withPresentationCompiler(op(_, ssf)) ()
+                  //proj.doWithPresentationCompiler(op(_, ssf)) // so that an exception is not thrown
                 }
               }
             }

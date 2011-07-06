@@ -41,14 +41,14 @@ case class ImportCompletionProposal(val importName: String) extends IJavaComplet
    */
   def apply(document : IDocument) : Unit = {
     IDESettings.quickfixImportByText.value match {
-      case ImportCompletionProposal.Strategies_Text => applyByTextTransfo(document)
-      case ImportCompletionProposal.Strategies_Ast => applyByASTTransfo(document)
+      case ImportCompletionProposal.Strategies_Text => applyByTextTransformation(document)
+      case ImportCompletionProposal.Strategies_Ast => applyByASTTransformation(document)
       case ImportCompletionProposal.Strategies_AstThenText => try {
-        applyByASTTransfo(document)
+        applyByASTTransformation(document)
       } catch {
         case t => {
           ScalaPlugin.plugin.logWarning("failed to update import by AST transformation, fallback to text implementation", Some(t))
-          applyByTextTransfo(document)
+          applyByTextTransformation(document)
         }
       }
     }
@@ -59,25 +59,15 @@ case class ImportCompletionProposal(val importName: String) extends IJavaComplet
    *
    * @param document the document into which to insert the proposed completion
    */
-  private def applyByASTTransfo(document : IDocument) : Unit = {
+  private def applyByASTTransformation(document : IDocument) : Unit = {
     
     withScalaFileAndSelection { (scalaSourceFile, textSelection) =>
     
       val changes = scalaSourceFile.withSourceFile { (sourceFile, compiler) =>
             
-        val refactoring = new AddImportStatement {
-          val global = compiler
-          
-          val selection = {
-            val start = textSelection.getOffset
-            val end = start + textSelection.getLength
-            val file = scalaSourceFile.file
-            // start and end are not yet used
-            new FileSelection(file, start, end)
-          }
-        }
+        val refactoring = new AddImportStatement { val global = compiler }
        
-        refactoring.addImport(refactoring.selection, importName)
+        refactoring.addImport(new refactoring.FileSelection(scalaSourceFile.file, textSelection.getOffset, textSelection.getOffset + textSelection.getLength), importName)
       }(Nil)
       
       applyChangesToFileWhileKeepingSelection(document, textSelection, scalaSourceFile.file, changes)
@@ -91,7 +81,7 @@ case class ImportCompletionProposal(val importName: String) extends IJavaComplet
    *
    * @param document the document into which to insert the proposed completion
    */
-  private def applyByTextTransfo(document : IDocument) : Unit = {
+  private def applyByTextTransformation(document : IDocument) : Unit = {
     val lineDelimiter = TextUtilities.getDefaultLineDelimiter(document)
 
     // Find the package declaration

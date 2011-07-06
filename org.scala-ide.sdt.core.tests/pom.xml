@@ -9,6 +9,33 @@
   <artifactId>org.scala-ide.sdt.core.tests</artifactId>
   <packaging>eclipse-test-plugin</packaging>
   
+  <profiles>
+    <profile>
+      <id>Mac OS</id>
+      <activation>
+        <os>
+          <family>mac</family>
+        </os>
+      </activation>
+      <properties>
+        <tycho.test.OSspecific>-Dosgi.ws=cocoa -XstartOnFirstThread</tycho.test.OSspecific>
+      </properties>
+    </profile>
+
+    <profile>
+      <activation>
+	<activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+	<tycho.test.OSspecific></tycho.test.OSspecific>
+      </properties>
+    </profile>
+
+  </profiles>
+
+  <properties>
+    <tycho.test.jvmArgs>-Xmx800m -XX:MaxPermSize=256m -Dsdtcore.headless ${tycho.test.OSspecific}</tycho.test.jvmArgs>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -44,14 +71,39 @@
         <artifactId>maven-osgi-test-plugin</artifactId>
         <version>${tycho.version}</version>
         <configuration>
-          <useUIHarness>true</useUIHarness>
-          <includes>
-            <include>scala/tools/eclipse/*Test.class</include>
-          </includes>
-          <!--
-          <testSuite>${project.artifactId}</testSuite> 
+          <useUIHarness>false</useUIHarness>
+          <useUIThread>false</useUIThread> 
+
+          <!-- Enable JDT weaving -->
+          <!-- <systemProperties combine.children="append"> -->
+          <!--   <aj.weaving.verbose>true</aj.weaving.verbose> -->
+          <!--   <org.aspectj.weaver.showWeaveInfo>true</org.aspectj.weaver.showWeaveInfo> -->
+          <!--   <org.aspectj.osgi.verbose>true</org.aspectj.osgi.verbose> -->
+          <!-- </systemProperties> -->
+          <!-- <frameworkExtensions> -->
+          <!--   <frameworkExtension> -->
+          <!--     <groupId>p2.osgi.bundle</groupId> -->
+          <!--     <artifactId>org.eclipse.equinox.weaving.hook</artifactId> -->
+          <!--     <version>1.0.0.v20100108</version> -->
+          <!--   </frameworkExtension> -->
+          <!-- </frameworkExtensions> -->
+
+          <!-- <includes> -->
+          <!--   <include>scala/tools/eclipse/*Test.class</include> -->
+          <!-- </includes> -->
+          <argLine>${tycho.test.jvmArgs}</argLine>
+          <testSuite>${project.artifactId}</testSuite>
           <testClass>scala.tools.eclipse.TestsSuite</testClass>
-          -->
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.sonatype.tycho</groupId>
+        <artifactId>target-platform-configuration</artifactId>
+        <version>${tycho.version}</version>
+        <configuration>
+          <resolver>p2</resolver>
+          <pomDependencies>consider</pomDependencies>
         </configuration>
       </plugin>
     </plugins>

@@ -21,7 +21,7 @@ import org.eclipse.core.resources.IMarker
 class ScalaBuilder extends IncrementalProjectBuilder {
   def plugin = ScalaPlugin.plugin
 
-  private val scalaJavaBuilder = new ScalaJavaBuilder
+  private val scalaJavaBuilder = new GeneralScalaJavaBuilder
   
   override def clean(monitor : IProgressMonitor) {
     super.clean(monitor)
@@ -161,16 +161,6 @@ class ScalaBuilder extends IncrementalProjectBuilder {
     case IncrementalProjectBuilder.FULL_BUILD => "FULL_BUILD"
     case x => x.toString
   }
-}
-
-object ScalaJavaBuilderUtils extends ReflectionUtils {
-  private val ibClazz = Class.forName("org.eclipse.core.internal.events.InternalBuilder")
-  private val setProjectMethod = getDeclaredMethod(ibClazz, "setProject", classOf[IProject])
-  private val jbClazz = Class.forName("org.eclipse.jdt.internal.core.builder.JavaBuilder")
-  private val initializeBuilderMethod = getDeclaredMethod(jbClazz, "initializeBuilder", classOf[Int], classOf[Boolean])
-  
-  def setProject(builder : ScalaJavaBuilder, project : IProject) = setProjectMethod.invoke(builder, project)
-  def initializeBuilder(builder : ScalaJavaBuilder, kind : Int, forBuild : Boolean) = initializeBuilderMethod.invoke(builder, int2Integer(kind), boolean2Boolean(forBuild))
 }
 
 object StateUtils extends ReflectionUtils {

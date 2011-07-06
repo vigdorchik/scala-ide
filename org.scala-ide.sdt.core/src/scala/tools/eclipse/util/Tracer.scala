@@ -13,21 +13,30 @@ object Tracer {
   /**  
    * A very primitive logger to replace call of classic println. 
    */
-  def println(s : String) = if (IDESettings.tracerEnabled.value) {
-    Console.println("ScalaPlugin--TRACE--" + (System.currentTimeMillis - t0) + "--" + Thread.currentThread.getName + "--:" + s)
+  def println(s : String) = {
+    if (IDESettings.tracerEnabled.value) {
+      Console.println("ScalaPlugin--TRACE--" + (System.currentTimeMillis - t0) + "--" + Thread.currentThread.getName + "--:" + s)
+    }
+    None
   }
   
-  def printlnItems(s : String, items : Iterable[Any]) = if (IDESettings.tracerEnabled.value) {
-    for(item <- items) {
-      Console.println("ScalaPlugin--TRACE--" + (System.currentTimeMillis - t0) + "--" + Thread.currentThread.getName + "--:" + s + " : " + item)
+  def printlnItems(s : String, items : Iterable[Any]) = {
+    if (IDESettings.tracerEnabled.value) {
+      for(item <- items) {
+        Console.println("ScalaPlugin--TRACE--" + (System.currentTimeMillis - t0) + "--" + Thread.currentThread.getName + "--:" + s + " : " + item)
+      }
     }
+    None
   }
 
-  def printlnWithStack(s : String, predicate : => Boolean = {true}) = if (IDESettings.tracerEnabled.value) {
-    if (predicate) {
-      Console.println("ScalaPlugin--TRACE--" + (System.currentTimeMillis - t0) + "--" + Thread.currentThread.getName + "--:" + s)
-      Thread.dumpStack
+  def printlnWithStack(s : String, predicate : => Boolean = {true}) = {
+    if (IDESettings.tracerEnabled.value) {
+      if (predicate) {
+        Console.println("ScalaPlugin--TRACE--" + (System.currentTimeMillis - t0) + "--" + Thread.currentThread.getName + "--:" + s)
+        Thread.dumpStack
+      }
     }
+    None
   }
 
   /**
