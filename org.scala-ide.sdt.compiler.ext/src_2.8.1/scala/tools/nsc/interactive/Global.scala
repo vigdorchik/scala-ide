@@ -141,7 +141,7 @@ class Global(settings: compat.Settings, reporter: Reporter, projectName: String 
     unitOfFile.getOrElse(source.file, { println("precondition violated: "+source+" is not loaded"); new Exception().printStackTrace(); new RichCompilationUnit(source) })
 
   /** Work through toBeRemoved list to remove any units.
-   *  Then return optionlly unit associated with given source.
+   *  Then return optionally unit associated with given source.
    */
   protected[interactive] def getUnit(s: SourceFile): Option[RichCompilationUnit] = {
     toBeRemoved.synchronized {
@@ -171,7 +171,7 @@ class Global(settings: compat.Settings, reporter: Reporter, projectName: String 
   def isOutOfDate: Boolean = outOfDate
     
   def demandNewCompilerRun() = {
-    if (outOfDate) throw FreshRunReq // cancel background compile
+    if (outOfDate) throw new FreshRunReq // cancel background compile
     else outOfDate = true            // proceed normally and enable new background compile
   }
   protected[interactive] var minRunId = 1
@@ -316,7 +316,7 @@ class Global(settings: compat.Settings, reporter: Reporter, projectName: String 
       }
     
       logreplay("exception thrown", scheduler.pollThrowable()) match {
-        case Some(ex @ FreshRunReq) => 
+        case Some(ex: FreshRunReq) => 
           newTyperRun()
           minRunId = currentRunId
           demandNewCompilerRun()
@@ -537,9 +537,10 @@ class Global(settings: compat.Settings, reporter: Reporter, projectName: String 
     } catch {
       case CancelException =>
         debugLog("cancelled")
-      case ex @ FreshRunReq =>
+      case ex: FreshRunReq =>
         if (debugIDE) {
           println("FreshRunReq thrown during response")
+          ex.printStackTrace()
         }
         response raise ex
         throw ex
@@ -576,8 +577,22 @@ class Global(settings: compat.Settings, reporter: Reporter, projectName: String 
     demandNewCompilerRun()
   }
 
+  private[interactive] def filesDeleted(sources: List[SourceFile], response: Response[Unit]) {
+    informIDE("files deleted: " + sources)
+    val deletedFiles = sources.map(_.file).toSet
+    val deletedSyms = currentTopLevelSyms filter {sym => deletedFiles contains sym.sourceFile}
+    for (d <- deletedSyms) {
+      d.owner.info.decls unlink d
+      deletedTopLevelSyms += d
+      currentTopLevelSyms -= d
+    }
+    sources foreach (removeUnitOf(_))
+    minRunId = currentRunId
+    respond(response) ()
+    demandNewCompilerRun()
+  }
   /** A fully attributed tree located at position `pos`  */
-  protected def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
+  private def typedTreeAt(pos: Position): Tree = getUnit(pos.source) match {
     case None =>
       reloadSources(List(pos.source))
       val result = typedTreeAt(pos)
@@ -696,7 +711,7 @@ class Global(settings: compat.Settings, reporter: Reporter, projectName: String 
 
   import analyzer.{SearchResult, ImplicitSearch}
 
-  protected def getScopeCompletion(pos: Position, response: Response[List[Member]]) {
+  private[interactive] def getScopeCompletion(pos: Position, response: Response[List[Member]]) {
     informIDE("getScopeCompletion" + pos)
     respond(response) { scopeMembers(pos) }
   }
@@ -925,10 +940,7 @@ class Global(settings: compat.Settings, reporter: Reporter, projectName: String 
      *  @return true iff typechecked correctly
      */
     private def applyPhase(phase: Phase, unit: CompilationUnit) {
-      val oldSource = reporter.getSource          
-      reporter.withSource(unit.source) {
-        atPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
-      }
+      atPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
     }
   }
   

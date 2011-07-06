@@ -106,7 +106,7 @@ trait CompilerControl { self: Global =>
     if (item.onCompilerThread) item() else scheduler.postWorkItem(item)
 
   /** Makes sure a set of compilation units is loaded and parsed.
-   *  Returns () to syncvar `response` on completions.
+   *  Returns () to syncvar `response` on completion.
    *  Afterwards a new background compiler run is started with
    *  the given sources at the head of the list of to-be-compiled sources.
    */
@@ -117,6 +117,13 @@ trait CompilerControl { self: Global =>
     }
     superseeded.foreach(_.response.set())
     postWorkItem(new ReloadItem(sources, response))
+  }
+
+  /** Removes source files and toplevel symbols, and issues a new typer run.
+   *  Returns () to syncvar `response` on completion.
+   */
+  def askFilesDeleted(sources: List[SourceFile], response: Response[Unit]) = {
+    postWorkItem(new FilesDeletedItem(sources, response))
   }
 
   /** Sets sync var `response` to the smallest fully attributed tree that encloses position `pos`.
@@ -145,14 +152,14 @@ trait CompilerControl { self: Global =>
   def askLinkPos(sym: Symbol, source: SourceFile, response: Response[Position]) = 
     postWorkItem(new AskLinkPosItem(sym, source, response))
   
-  /** Sets sync var `response' to list of members that are visible
+  /** Sets sync var `response` to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
    *  @pre  source is loaded
    */
   def askTypeCompletion(pos: Position, response: Response[List[Member]]) = 
     postWorkItem(new AskTypeCompletionItem(pos, response))
 
-  /** Sets sync var `response' to list of members that are visible
+  /** Sets sync var `response` to list of members that are visible
    *  as members of the scope enclosing `pos`.
    *  @pre  source is loaded
    */
@@ -197,12 +204,12 @@ trait CompilerControl { self: Global =>
   /** Cancels current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
    */
-  def askReset() = scheduler raise FreshRunReq
+  def askReset() = scheduler raise (new FreshRunReq)
 
   /** Tells the compile server to shutdown, and not to restart again */
   def askShutdown() = scheduler raise ShutdownReq
   
-  @deprecated("use parseTree(source) instead") 
+  @deprecated("use parseTree(source) instead") // deleted 2nd parameter, as thius has to run on 2.8 also.
   def askParse(source: SourceFile, response: Response[Tree]) = respond(response) {
     parseTree(source)
   }
@@ -259,6 +266,10 @@ trait CompilerControl { self: Global =>
     override def toString = "reload "+sources
   }
 
+  case class FilesDeletedItem(sources: List[SourceFile], response: Response[Unit]) extends WorkItem {
+    def apply() = filesDeleted(sources, response)
+    override def toString = "files deleted "+sources
+  }
   class AskTypeAtItem(val pos: Position, response: Response[Tree]) extends WorkItem {
     def apply() = self.getTypedTreeAt(pos, response)
     override def toString = "typeat "+pos.source+" "+pos.show
@@ -304,7 +315,7 @@ trait CompilerControl { self: Global =>
 /** Signals a request for a fresh background compiler run.
  *  Note: The object has to stay top-level so that the PresentationCompilerThread may access it.
  */
-object FreshRunReq extends ControlThrowable
+class FreshRunReq extends ControlThrowable
 
 /** Signals a request for a shutdown of the presentation compiler.
  *  Note: The object has to stay top-level so that the PresentationCompilerThread may access it.
