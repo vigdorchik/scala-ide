@@ -9,10 +9,11 @@
   <packaging>pom</packaging>
 
   <properties>
+    <eclipse.version>3.6</eclipse.version>
     <scala.version>2.8.0</scala.version>
     <version.tag>nightly</version.tag>
     <version.suffix>210</version.suffix>
-    <tycho.version>0.11.0</tycho.version>
+    <tycho.version>0.11.1</tycho.version>
     <sbt.version>0.9.0-SNAPSHOT</sbt.version>
     <maven.compiler.source>1.5</maven.compiler.source>
     <maven.compiler.target>1.5</maven.compiler.target>
@@ -105,20 +106,6 @@
   </build>
   <repositories>
     <repository>
-      <id>galileo</id>
-      <name>Eclipse Galileo p2 repository</name>
-      <layout>p2</layout>
-      <url>http://download.eclipse.org/releases/galileo/</url>
-      <snapshots><enabled>false</enabled></snapshots>
-    </repository>
-    <repository>
-      <id>ajdt-galileo</id>
-      <name>AJDT for Eclipse Galileo p2 repository</name>
-      <layout>p2</layout>
-      <url>http://download.eclipse.org/tools/ajdt/35/update</url>
-      <snapshots><enabled>false</enabled></snapshots>
-    </repository>
-    <repository>
       <id>scala-tools.release</id>
       <name>Scala Tools maven release repository</name>
       <url>http://scala-tools.org/repo-releases</url>
@@ -155,6 +142,56 @@
     </pluginRepository>
   </pluginRepositories>
   <profiles>
+    <profile>
+      <id>e35</id>
+      <activation>
+        <property>
+          <name>eclipse.version</name>
+          <value>3.5</value>
+        </property>
+      </activation>
+      <repositories>
+        <repository>
+          <id>galileo</id>
+          <name>Eclipse Galileo p2 repository</name>
+          <layout>p2</layout>
+          <url>http://download.eclipse.org/releases/galileo/</url>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+        <repository>
+          <id>ajdt-galileo</id>
+          <name>AJDT for Eclipse Galileo p2 repository</name>
+          <layout>p2</layout>
+          <url>http://download.eclipse.org/tools/ajdt/35/update</url>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+      </repositories>
+    </profile>
+    <profile>
+      <id>e36</id>
+      <activation>
+        <property>
+          <name>eclipse.version</name>
+          <value>3.6</value>
+        </property>
+      </activation>
+      <repositories>
+        <repository>
+          <id>helios</id>
+          <name>Eclipse Helios p2 repository</name>
+          <layout>p2</layout>
+          <url>http://download.eclipse.org/releases/helios/</url>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+        <repository>
+          <id>ajdt-helios</id>
+          <name>AJDT for Eclipse Helios p2 repository</name>
+          <layout>p2</layout>
+          <url>http://download.eclipse.org/tools/ajdt/36/update</url>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+      </repositories>
+    </profile>
     <profile>
       <id>scala-2.8.0</id>
       <activation>
