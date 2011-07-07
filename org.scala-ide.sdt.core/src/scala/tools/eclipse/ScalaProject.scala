@@ -26,6 +26,10 @@ import scala.tools.eclipse.ui.semantic.highlighting.UnusedImportsAnalyzer
 import scala.tools.nsc.io.AbstractFile
 import scala.ref.SoftReference
 
+trait BuildSuccessListener {
+  def buildSuccessful(): Unit
+}
+
 class ScalaProject(val underlying: IProject) {
   import ScalaPlugin.plugin
 
@@ -37,6 +41,8 @@ class ScalaProject(val underlying: IProject) {
   
   private val resetPendingLock = new Object
   private var resetPending = false
+  
+  private val buildListeners = new HashSet[BuildSuccessListener]
 
   private val presentationCompiler = new Cached[ScalaPresentationCompiler] {
     override def create() = {
@@ -48,9 +54,9 @@ class ScalaProject(val underlying: IProject) {
         val compiler = if (IDESettings.exceptionOnCreatePresentationCompiler.value) {
           throw new Exception("exceptionOnCreatePresentationCompiler == true")
         } else  if (Info.scalaVersion.startsWith("2.9")) {
-          new ScalaPresentationCompiler(settings)
+          new ScalaPresentationCompiler(ScalaProject.this, settings)
         } else {
-          new ScalaPresentationCompiler(settings) with scalac_28.TopLevelMapTyper {
+          new ScalaPresentationCompiler(ScalaProject.this, settings) with scalac_28.TopLevelMapTyper {
             def project = ScalaProject.this
           }
         }
@@ -410,7 +416,10 @@ class ScalaProject(val underlying: IProject) {
     case Some(b) => b
   }
 
-  def build(addedOrUpdated : Set[IFile], removed : Set[IFile], monitor : SubMonitor) {
+  /* If true, then it means that all source files have to be reloaded */
+  //def prepareBuild(): Boolean = if (!hasBeenBuilt) buildManager.invalidateAfterLoad else false
+  
+  def build(addedOrUpdated: Set[IFile], removed: Set[IFile], monitor: SubMonitor) {
     buildManager.build(addedOrUpdated, removed, monitor)
     if (IDESettings.markUnusedImports.value) {
       for ( file <- addedOrUpdated) {
@@ -420,6 +429,17 @@ class ScalaProject(val underlying: IProject) {
     refreshOutput
 
     // Already performs saving the dependencies
+    
+    if (!buildManager.hasErrors) 
+      buildListeners foreach { _.buildSuccessful }
+  }
+  
+  def addBuildSuccessListener(listener: BuildSuccessListener) {
+    buildListeners add listener
+  }
+  
+  def removeBuildSuccessListener(listener: BuildSuccessListener) {
+    buildListeners remove listener
   }
 
   def clean(implicit monitor : IProgressMonitor) = {

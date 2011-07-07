@@ -47,7 +47,7 @@ class OrganizeImportsAction extends RefactoringAction with ActionWithNoWizard {
      */
     def getMissingTypeErrorsFromFile(file: ScalaSourceFile): Array[String] = {
       val problems = Option(file.getProblems) getOrElse Array[IProblem]()
-      val typeNotFoundError = "not found: type ([^\\s]+) .*".r
+      val typeNotFoundError = "not found: type ([^\\s]+).*".r
       val valueNotFoundError = "not found: value ([^\\s]+)".r
 
       problems filter (_.isError) map (_.getMessage) collect {
@@ -140,7 +140,7 @@ class OrganizeImportsAction extends RefactoringAction with ActionWithNoWizard {
      * It also updates the QualifiedTypeNameHistory for the chosen types so they will be preferred in
      * subsequent runs.
      */
-    def decideAmbiguousMissingTypes(missingTypes: Array[Array[TypeNameMatch]]): Array[TypeNameMatch] = {
+    def decideAmbiguousMissingTypes(missingTypes: Array[Array[TypeNameMatch]]): Option[Array[TypeNameMatch]] = {
 
       val typeSearchDialog = {
         val labelProvider = new TypeNameMatchLabelProvider(TypeNameMatchLabelProvider.SHOW_FULLYQUALIFIED)
@@ -154,16 +154,16 @@ class OrganizeImportsAction extends RefactoringAction with ActionWithNoWizard {
       typeSearchDialog.setComparator(new TypeSearchComparator)
         
       if (missingTypes.size > 0 && typeSearchDialog.open() == Window.OK) {
-        typeSearchDialog.getResult map {
+        Some(typeSearchDialog.getResult map {
           case array: Array[_] if array.length > 0 =>
             array(0) match {
               case tpeName: TypeNameMatch =>
                 QualifiedTypeNameHistory.remember(tpeName.getFullyQualifiedName)
                 tpeName
             }
-        }
+        })
       } else {
-        Array[TypeNameMatch]()
+        None
       }
     }
     
@@ -183,12 +183,18 @@ class OrganizeImportsAction extends RefactoringAction with ActionWithNoWizard {
   
           case (uniqueTypes, ambiguousTypos) =>
             
-            addImports(uniqueTypes.flatten ++ decideAmbiguousMissingTypes(ambiguousTypos.toArray), pm)
-            
-            if(!allProblemsFixed && remainingPasses > 0) {
-              // We restart with an updated list of problems, hoping
-              // that some errors have been resolved.
-              iterate(getMissingTypeErrorsFromFile(file), remainingPasses - 1)
+            decideAmbiguousMissingTypes(ambiguousTypos.toArray) match {
+              case Some(missingTypes) => 
+                addImports(uniqueTypes.flatten ++ missingTypes, pm)
+                
+                if(!allProblemsFixed && remainingPasses > 0) {
+                  // We restart with an updated list of problems, hoping
+                  // that some errors have been resolved.
+                  iterate(getMissingTypeErrorsFromFile(file), remainingPasses - 1)
+                }
+              case None => 
+                // the user canceled, so we just add the unique types and stop
+                addImports(uniqueTypes.flatten, pm)
             }
         }
       }
@@ -197,7 +203,7 @@ class OrganizeImportsAction extends RefactoringAction with ActionWithNoWizard {
     
     EditorHelpers.withCurrentScalaSourceFile { file =>
       getMissingTypeErrorsFromFile(file) match {
-        case Array() => 
+        case missingTypes if missingTypes.isEmpty => 
           // continue with organizing imports
           runRefactoringInUiJob()
         case missingTypes =>

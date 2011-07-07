@@ -264,7 +264,7 @@ protected class ScalaTextSourceViewerConfiguration(val editor : TextEditor, val 
 //  }
   override def getAnnotationHover(sourceViewer : ISourceViewer) : IAnnotationHover =  new org.eclipse.jface.text.source.DefaultAnnotationHover()
   
-  override def getTextHover(sv : ISourceViewer, contentType : String, stateMask : Int) = new ScalaHover(getCodeAssist)
+  override def getTextHover(sv : ISourceViewer, contentType : String, stateMask : Int) = new ScalaHover(getCodeAssist _)
 
   override def getHyperlinkDetectors(sv : ISourceViewer) = {
     val shd = new ScalaHyperlinkDetector()

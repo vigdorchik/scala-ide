@@ -1,8 +1,6 @@
 package scala.tools.eclipse
 package markoccurrences
 
-import scala.tools.nsc.interactive.FreshRunReq
-import scala.tools.refactoring.common.Selections
 import scala.tools.refactoring.implementations.MarkOccurrences
 import org.eclipse.jface.text.Region
 import scala.tools.eclipse.javaelements.ScalaSourceFile

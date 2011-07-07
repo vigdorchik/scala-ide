@@ -20,8 +20,8 @@ import scala.tools.eclipse.util.{ Cached, EclipseFile, EclipseResource, IDESetti
 import scala.tools.nsc.interactive.compat.Settings
 import scala.tools.nsc.interactive.compat.conversions._
 
-class ScalaPresentationCompiler(settings : Settings)
-  extends Global(settings, new ScalaPresentationCompiler.PresentationReporter)
+class ScalaPresentationCompiler(project : ScalaProject, settings : Settings)
+  extends Global(settings, new ScalaPresentationCompiler.PresentationReporter, project.underlying.getName)
   with ScalaStructureBuilder 
   with ScalaIndexBuilder 
   with ScalaMatchLocator
@@ -75,14 +75,14 @@ class ScalaPresentationCompiler(settings : Settings)
 
     
   def body(sourceFile : SourceFile) = {
-    val tree = new Response[Tree]
-    askType(sourceFile, false, tree)
+    val response = new Response[Tree]
+    askType(sourceFile, false, response)
     val timeout = IDESettings.timeOutBodyReq.value //Defensive use a timeout see issue_0003 issue_0004
-    tree.get(timeout) match {
+    response.get(timeout) match {
       case None => throw new AsyncGetTimeoutException(timeout, "body(" + sourceFile + ")")
       case Some(x) => x match {
-        case Left(l) => l
-        case Right(r) => throw new AsyncGetException(r, "body(" + sourceFile + ")")
+        case Left(tree) => tree
+        case Right(exc) => throw new AsyncGetException(exc, "body(" + sourceFile + ")")
       }
     }
   }
@@ -100,7 +100,7 @@ class ScalaPresentationCompiler(settings : Settings)
         case None => throw new AsyncGetTimeoutException(timeout, "withStructure(" + sourceFile + ")")
         case Some(x) => x match {
           case Left(tree) => tree
-          case Right(r) => throw new AsyncGetException(r, "withStructure(" + sourceFile + ")")
+          case Right(exc) => throw new AsyncGetException(exc, "withStructure(" + sourceFile + ")")
         }
       }      
     }
@@ -118,7 +118,11 @@ class ScalaPresentationCompiler(settings : Settings)
         None
       case f: FreshRunReq =>
         println("FreshRunReq in ask:\n" + f)
-        None
+         None
+// BACK-2.8.1         
+//      case e @ InvalidCompanions(c1, c2) =>
+//        reporter.warning(c1.pos, e.getMessage)
+//        None
       case e =>
         ScalaPlugin.plugin.logError("Error during askOption", e)
         None

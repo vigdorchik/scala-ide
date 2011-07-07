@@ -53,6 +53,8 @@ trait ScalaStructureBuilder { self : ScalaPresentationCompiler =>
         case None => Some(0)
         case v => v
       }
+      
+      override def default(sym: Symbol) = 0
     } 
     
     def fillOverrideInfos(c : Symbol) {
@@ -274,13 +276,14 @@ trait ScalaStructureBuilder { self : ScalaPresentationCompiler =>
       override def resetImportContainer : Unit = currentImportContainer = None
       
       override def addImport(i : Import) : Owner = {
+        i.symbol.initialize // make sure the import tree is attributed
         val prefix = i.expr.symbol.fullName
         val pos = i.pos
 
         def isWildcard(s: ImportSelector) : Boolean = s.name == nme.WILDCARD
 
         def addImport(name : String, isWildcard : Boolean) {
-          val path = prefix+"."+(if(isWildcard) "*" else name)
+          val path = prefix + (if(isWildcard) "" else "." + name)
           
           val (importContainer, importContainerInfo) = currentImportContainer match {
             case Some(ci) => ci

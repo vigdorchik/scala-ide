@@ -37,6 +37,8 @@ object ScalaImages  {
   val JAVA_INTERFACE = JavaPluginImages.get(JavaPluginImages.IMG_OBJS_INTERFACE)
   val TEMPLATE = JavaPluginImages.get(JavaPluginImages.IMG_OBJS_TEMPLATE)
   
+  val REFRESH_REPL_TOOLBAR = create("icons/full/etool16/refresh_interpreter.gif")
+
   private def create(localPath : String) = {
     try {
       val pluginInstallURL : URL = ScalaPlugin.plugin.getBundle.getEntry("/")
