@@ -117,8 +117,9 @@ Many thanks to David Bernard, Matt Russell, Mirko Stocker, Joshua Suereth, and a
 
 Version details :
                 </property>
+                <delete file="${project.basedir}/about.ini" quiet="true"/>
                 <propertyfile
-                  file="${basedir}/about.ini"
+                  file="${project.basedir}/about.ini"
                   comment="Property 'featureImage' contains path to feature image (32x32)">
                   <entry  key="featureImage" default="" operation="=" value="about.png"/>
                   <entry  key="aboutText" default="" operation="=" value="${aboutText} ${gitLastCommitInfo}"/>
