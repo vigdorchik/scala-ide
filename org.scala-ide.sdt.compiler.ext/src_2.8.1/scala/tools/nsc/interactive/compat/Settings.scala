@@ -15,12 +15,12 @@ class Settings(errorFn: String => Unit) extends MainSettings(errorFn) {
   /**
    * IDE-specific settings
    */
-  val YpresentationVerbose = BooleanSetting("-Ypresentation-verbose", "Print information about presentation compiler tasks.")
-  val YpresentationDebug   = BooleanSetting("-Ypresentation-debug",  "Enable debugging output for the presentation compiler.")
+  val YpresentationVerbose = BooleanSetting("-Ypresentation-verbose", "[N/A for 2.8.1] Print information about presentation compiler tasks.")
+  val YpresentationDebug   = BooleanSetting("-Ypresentation-debug",  "[N/A for 2.8.1] Enable debugging output for the presentation compiler.")
   
-  val YpresentationLog     = StringSetting("-Ypresentation-log", "file", "Log presentation compiler events into file", "")
-  val YpresentationReplay  = StringSetting("-Ypresentation-replay", "file", "Replay presentation compiler events from file", "")
-  val YpresentationDelay   = IntSetting("-Ypresentation-delay", "Wait number of ms after typing before starting typechecking", 0, Some(0, 999), str => Some(str.toInt))
+  val YpresentationLog     = StringSetting("-Ypresentation-log", "file", "[N/A for 2.8.1] Log presentation compiler events into file", "")
+  val YpresentationReplay  = StringSetting("-Ypresentation-replay", "file", "[N/A for 2.8.1] Replay presentation compiler events from file", "")
+  val YpresentationDelay   = IntSetting("-Ypresentation-delay", "[N/A for 2.8.1] Wait number of ms after typing before starting typechecking", 0, Some(0, 999), str => Some(str.toInt))
 
 }
 
