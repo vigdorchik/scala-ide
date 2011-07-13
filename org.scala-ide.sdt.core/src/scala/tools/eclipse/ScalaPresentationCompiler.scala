@@ -22,6 +22,7 @@ import scala.tools.eclipse.util.{ Cached, EclipseFile, EclipseResource, HasLogge
 import scala.tools.nsc.util.FailedInterrupt
 import scala.tools.nsc.symtab.Flags
 import scala.tools.eclipse.completion.CompletionProposal
+import scala.tools.eclipse.scaladoc.ScalaCommentsExtractor
 
 class ScalaPresentationCompiler(project : ScalaProject, settings : Settings)
   extends Global(settings, new ScalaPresentationCompiler.PresentationReporter, project.underlying.getName)
@@ -33,6 +34,7 @@ class ScalaPresentationCompiler(project : ScalaProject, settings : Settings)
   with JavaSig
   with JVMUtils 
   with LocateSymbol 
+  with ScalaCommentsExtractor
   with HasLogger { self =>
   
   def presentationReporter = reporter.asInstanceOf[ScalaPresentationCompiler.PresentationReporter]
@@ -266,6 +268,8 @@ class ScalaPresentationCompiler(project : ScalaProject, settings : Settings)
          sym.fullName,
          false)
   }
+  
+  override def forScaladoc = true;
 }
 
 object ScalaPresentationCompiler {

@@ -248,4 +248,88 @@ trait ScalaJavaMapper extends ScalaAnnotationHelper with HasLogger { self : Scal
     else
       enclPackage.fullName
   }
+  
+  import org.eclipse.jdt.core._
+  import org.eclipse.jdt.internal.core._
+  import scala.tools.nsc.symtab.Flags
+  
+  /** Return the Java Element corresponding to the given Java Symbol.
+   * 
+   *  The given symbol has to be a Java symbol.
+   */
+  def getJavaElement2(sym: Symbol): Option[IMember] = {
+    assert((sym ne null) /* && sym.hasFlag(Flags.JAVA) */)
+    
+    def matchesMethod(meth: IMethod): Boolean = {
+      import Signature._
+      askOption { () =>
+        ((meth.getElementName == sym.name.toString)
+          && meth.getParameterTypes.map(tp => getTypeErasure(getElementType(tp)))
+                                   .sameElements(sym.tpe.paramTypes.map(mapParamTypeSignature)))
+      }.getOrElse(false)
+    }
+    
+    val javaModel = JavaModelManager.getJavaModelManager.getJavaModel
+    if (sym.isClass) {
+      val fullClassName = mapType(sym)
+      val projs = javaModel.getJavaProjects
+      projs.map(p => Option(p.findType(fullClassName))).find(_.isDefined).flatten.headOption
+    } else if (sym ne NoSymbol) 
+      getJavaElement2(sym.owner) match {
+        case Some(ownerClass: IType) => 
+          if (sym.isMethod) ownerClass.getMethods.find(matchesMethod)
+          else ownerClass.getFields.find(_.getElementName == sym.name.toString)
+        case _ => None
+    } else
+      None;
+  }
+  
+  /*
+  def getJavaElement(sym: Symbol): Option[IMember] = {
+    if (sym == null)
+      return None;
+    val javaModel = JavaModelManager.getJavaModelManager.getJavaModel    
+    if (sym.isClass) {
+      val fullClassName = mapType(sym)
+      val projs = javaModel.getJavaProjects
+      projs.foreach(p => {
+        val tpe = p.findType(fullClassName)
+        if (tpe != null)
+          return Some(tpe);
+      })
+    } else if (sym.isMethod) {
+      val clsSymbol = sym.owner
+      getJavaElement(clsSymbol) match {
+        case Some(tpe: IType) =>
+          val sameNameMethods = tpe.getMethods.filter(m =>
+            m.getElementName == sym.name.toString)
+          if (sameNameMethods.size == 1)
+            return Some(sameNameMethods(0))
+          val methodType = sym.tpe
+          val sameParNumberMethods = sameNameMethods.filter(m =>
+            m.getNumberOfParameters == methodType.params.size)
+          if (sameParNumberMethods.size == 1)
+            return Some(sameParNumberMethods(0))
+          val referencedMethodParTypes = methodType.paramTypes.map(pt => mapParamTypeSignature(pt)).toArray
+          return sameParNumberMethods.find(m => {
+            val fullyNamedParamTypes = m.getParameterTypes.map(pt => {
+              val elemType = Signature.getElementType(pt)
+              Signature.getTypeErasure(elemType) //ToDo: improve by considering the type parameters 
+            })
+            fullyNamedParamTypes.sameElements(referencedMethodParTypes)
+          })
+        case _ =>
+      }
+    } else if (sym.isVariable || sym.isValue) {
+      if (sym.owner.isClass) {
+        getJavaElement(sym.owner) match {
+          case Some(tpe: IType) =>
+            return tpe.getFields.find(f => f.getElementName ==
+              sym.name.toString)
+          case _ =>
+        }
+      }
+    }
+    return None;
+  } */
 }
