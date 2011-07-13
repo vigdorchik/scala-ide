@@ -122,8 +122,8 @@ trait JavadocUtils extends ReflectionUtils {
 trait CommentToHtmlTransformer { self : ScalaPresentationCompiler =>
   import scala.tools.nsc.doc.Settings
   
-  val classImage = JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL(ScalaImages.SCALA_CLASS)
-  val objectImage = JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL(ScalaImages.SCALA_OBJECT)
+  lazy val classImage = JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL(ScalaImages.SCALA_CLASS)
+  lazy val objectImage = JavaPlugin.getDefault().getImagesOnFSRegistry().getImageURL(ScalaImages.SCALA_OBJECT)
 
   val comment2HTMLBuilder = new HtmlPage {
     val path = List("")
