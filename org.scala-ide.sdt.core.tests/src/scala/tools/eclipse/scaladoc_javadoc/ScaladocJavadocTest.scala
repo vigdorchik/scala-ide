@@ -1,9 +1,10 @@
 package scala.tools.eclipse.scaladoc_javadoc
 
-import scala.tools.eclipse.javaelements._
 import org.eclipse.jdt.core.IPackageFragmentRoot
 import org.eclipse.jdt.core.JavaCore
 import scala.tools.eclipse.testsetup.SDTTestUtils
+import scala.tools.eclipse.javaelements._
+import scala.tools.eclipse.scaladoc._
 import org.junit.Assert._
 import org.eclipse.core.runtime.Path
 import org.junit.Test
@@ -11,7 +12,7 @@ import org.eclipse.jface.text.Region
 import scala.tools.eclipse.markoccurrences.ScalaOccurrencesFinder
 import scala.tools.eclipse.ScalaWordFinder
 import scala.tools.eclipse.testsetup.TestProjectSetup
-
+import scala.tools.eclipse._
 
 object ScaladocJavadocTest extends TestProjectSetup("scaladoc-javadoc")
 
@@ -19,16 +20,22 @@ class ScaladocJavadocTest {
   import ScaladocJavadocTest._
   
   def computeScaladocComment(unit : ScalaCompilationUnit, marker : String) : String = {
-	  project.withSourceFile(unit) { (src, compiler) =>
-        import compiler._      
-        val pos = SDTTestUtils.positionsOf(src.content, marker).head;
-        val tree =  new Response[Tree]
-        val range = rangePos(src, pos - 2, pos - 2, pos - 1)
-        askTypeAt(range, tree)          
-        tree.get.left.foreach(t => {
-          return buildCommentAsHtml(unit, t.symbol, t.tpe).toString
-        })
-        ""
+	  project.withSourceFile(unit) { (src, comp) =>
+	    new ScaladocCommentsToEclipseHtmlTransformer {
+          val compiler = comp;
+          import compiler._
+          
+          def computeComment : String = {
+            val pos = SDTTestUtils.positionsOf(src.content, marker).head;
+            val tree =  new Response[Tree]
+            val range = rangePos(src, pos - 2, pos - 2, pos - 1)
+            askTypeAt(range, tree)          
+            tree.get.left.foreach(t => {
+              return buildCommentAsHtml(unit, t.symbol, t.tpe).toString
+            })
+            ""
+          }
+	    }.computeComment
 	  }() 
   }
   

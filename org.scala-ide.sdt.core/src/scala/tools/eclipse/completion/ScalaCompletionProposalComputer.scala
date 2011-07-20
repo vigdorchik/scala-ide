@@ -7,6 +7,7 @@ package scala.tools.eclipse
 package completion
 
 import org.eclipse.jface.viewers.ISelectionProvider
+
 import org.eclipse.jface.text.TextSelection
 import org.eclipse.jface.text.contentassist.
              {ICompletionProposal, ICompletionProposalExtension, 
@@ -33,6 +34,7 @@ import org.eclipse.jface.internal.text.html.BrowserInformationControl
 import org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover
 import scala.tools.eclipse.util.EclipseUtils
 import org.eclipse.jface.text.contentassist.ICompletionProposalExtension3
+import scala.tools.eclipse.scaladoc.ScaladocCommentsToEclipseHtmlTransformer
 
 class ScalaCompletionProposalComputer extends IJavaCompletionProposalComputer with JavadocUtils {
   def sessionStarted() {}
@@ -85,6 +87,7 @@ class ScalaCompletionProposalComputer extends IJavaCompletionProposalComputer wi
    
   private def findCompletions(position: Int, context: ContentAssistInvocationContext, scu: ScalaCompilationUnit)
                              (sourceFile: SourceFile, compiler: ScalaPresentationCompiler): java.util.List[_] = {
+<<<<<<< HEAD
     val pos = compiler.rangePos(sourceFile, position, position, position)
     
     val chars = context.getDocument.get.toCharArray
@@ -115,25 +118,72 @@ class ScalaCompletionProposalComputer extends IJavaCompletionProposalComputer wi
     val prefix = (if (position <= start) "" else scu.getBuffer.getText(start, position-start).trim).toArray
     
     def nameMatches(sym : compiler.Symbol) = prefixMatches(sym.decodedName.toString.toArray, prefix)  
+=======
+    val chars = context.getDocument.get.toCharArray
+    val region = ScalaWordFinder.findCompletionPoint(chars, position)
+    
+    findCompletions(region)(position, context.getViewer().getSelectionProvider, scu)(sourceFile, compiler)
+  }
+    
+  import org.eclipse.jface.text.IRegion
+  
+  def findCompletions(region: IRegion)(position: Int, selectionProvider: ISelectionProvider, scu: ScalaCompilationUnit)
+                             (sourceFile: SourceFile, comp: ScalaPresentationCompiler): java.util.List[_] = {
+>>>>>>> the UI code is out from the ScalaPresentationCompiler
     val buff = new collection.mutable.ListBuffer[ICompletionProposal]
 
-    /** Add a new completion proposal to the buffer. Skip constructors and accessors.
-     * 
-     *  Computes a very basic relevance metric based on where the symbol comes from 
-     *  (in decreasing order of relevance):
-     *    - members defined by the owner
-     *    - inherited members
-     *    - members added by views
-     *    - packages
-     *    - members coming from Any/AnyRef/Object
-     *    
-     *  TODO We should have a more refined strategy based on the context (inside an import, case
-     *       pattern, 'new' call, etc.)
-     */
-    def addCompletionProposal(sym: compiler.Symbol, tpe: compiler.Type, inherited: Boolean, viaView: compiler.Symbol) {
-      if (sym.isConstructor) return
+    new ScaladocCommentsToEclipseHtmlTransformer {
+      val compiler = comp;
 
-       val image = if (sym.isSourceMethod && !sym.hasFlag(Flags.ACCESSOR | Flags.PARAMACCESSOR)) defImage
+      val pos = compiler.rangePos(sourceFile, position, position, position)
+
+      val start = if (region == null) position else region.getOffset
+
+      val typed = new compiler.Response[compiler.Tree]
+      compiler.askTypeAt(pos, typed)
+      val t1 = typed.get.left.toOption
+
+      val completed = new compiler.Response[List[compiler.Member]]
+      // completion depends on the typed tree
+      t1 match {
+        // completion on select
+        case Some(s @ compiler.Select(qualifier, name)) if qualifier.pos.isDefined && qualifier.pos.isRange =>
+          val cpos0 = qualifier.pos.end
+          val cpos = compiler.rangePos(sourceFile, cpos0, cpos0, cpos0)
+          compiler.askTypeCompletion(cpos, completed)
+        case Some(compiler.Import(expr, _)) =>
+          // completion on `imports`
+          val cpos0 = expr.pos.endOrPoint
+          val cpos = compiler.rangePos(sourceFile, cpos0, cpos0, cpos0)
+          compiler.askTypeCompletion(cpos, completed)
+        case _ =>
+          // this covers completion on `types`
+          val cpos = compiler.rangePos(sourceFile, start, start, start)
+          compiler.askScopeCompletion(cpos, completed)
+      }
+
+      val prefix = (if (position <= start) "" else scu.getBuffer.getText(start, position - start).trim).toArray
+
+      def nameMatches(sym: compiler.Symbol) = prefixMatches(sym.decodedName.toString.toArray, prefix)
+
+      /**
+       * Add a new completion proposal to the buffer. Skip constructors and accessors.
+       *
+       *  Computes a very basic relevance metric based on where the symbol comes from
+       *  (in decreasing order of relevance):
+       *    - members defined by the owner
+       *    - inherited members
+       *    - members added by views
+       *    - packages
+       *    - members coming from Any/AnyRef/Object
+       *
+       *  TODO We should have a more refined strategy based on the context (inside an import, case
+       *       pattern, 'new' call, etc.)
+       */
+      def addCompletionProposal(sym: compiler.Symbol, tpe: compiler.Type, inherited: Boolean, viaView: compiler.Symbol) {
+        if (sym.isConstructor) return
+
+        val image = if (sym.isSourceMethod && !sym.hasFlag(Flags.ACCESSOR | Flags.PARAMACCESSOR)) defImage
                    else if (sym.isClass) classImage
                    else if (sym.isTrait) traitImage
                    else if (sym.isModule) if (sym.isJavaDefined) 
@@ -141,6 +191,7 @@ class ScalaCompletionProposalComputer extends IJavaCompletionProposalComputer wi
                                           else objectImage
                    else if (sym.isType) typeImage
                    else valImage
+<<<<<<< HEAD
        val name = sym.decodedName
        val signature = 
          if (sym.isMethod) { name +
@@ -190,16 +241,70 @@ class ScalaCompletionProposalComputer extends IJavaCompletionProposalComputer wi
        //create a new completion proposal object. The execution of 'additionalInfoBuilder' is deferred until the information is really needed
        buff += new ScalaCompletionProposal(start, name, signature, contextString, additionalInfoBuilder, relevance, image, context.getViewer.getSelectionProvider)
     }
+=======
+                   
+        val name = sym.decodedName
+        val signature =
+          if (sym.isMethod) {
+            name +
+              (if (!sym.typeParams.isEmpty) sym.typeParams.map { _.name }.mkString("[", ",", "]") else "") +
+              tpe.paramss.map(_.map(_.tpe.toString).mkString("(", ", ", ")")).mkString +
+              ": " + tpe.finalResultType.toString
+          } else name
 
-    for (completions <- completed.get.left.toOption) {
-      compiler.askOption { () =>
-        for (completion <- completions) {
-          completion match {
-            case compiler.TypeMember(sym, tpe, accessible, inherited, viaView) if nameMatches(sym) =>
-              addCompletionProposal(sym, tpe, inherited, viaView)
-            case compiler.ScopeMember(sym, tpe, accessible, _) if nameMatches(sym) =>
-              addCompletionProposal(sym, tpe, false, compiler.NoSymbol)
-            case _ =>
+        def additionalInfoBuilder(): JavadocBrowserInformationControlInput = {
+          import org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2
+          val buffer = new StringBuffer();
+          HTMLPrinter.insertPageProlog(buffer, 0, styleSheet);
+
+          if (sym.hasFlag(Flags.JAVA))
+            compiler.getJavaElement2(sym) match {
+              case Some(element) =>
+                val info = JavadocContentAccess2.getHTMLContent(element, true) //element.getAttachedJavadoc(null)         
+                if (info != null && info.length() > 0)
+                  buffer.append(info);
+                else
+                  buffer.append(buildCommentAsHtml(scu, sym, tpe))
+              case _ =>
+                throw new IllegalStateException("getJavaElement2 did not find the corresponding Java element for symbol " + sym.fullName)
+            }
+          else
+            buffer.append(buildCommentAsHtml(scu, sym, tpe))
+
+          HTMLPrinter.addPageEpilog(buffer);
+          return new JavadocBrowserInformationControlInput(null, null, buffer.toString, 0);
+        }
+
+        // rudimentary relevance, place own members before inherited ones, and before view-provided ones
+        var relevance = 100
+        if (inherited) relevance -= 10
+        if (viaView != compiler.NoSymbol) relevance -= 20
+        if (sym.isPackage) relevance -= 30
+        // theoretically we'd need an 'ask' around this code, but given that
+        // Any and AnyRef are definitely loaded, we call directly to definitions.
+        if (sym.owner == compiler.definitions.AnyClass
+          || sym.owner == compiler.definitions.AnyRefClass
+          || sym.owner == compiler.definitions.ObjectClass) {
+          relevance -= 40
+        }
+
+        val contextString = sym.paramss.map(_.map(p => "%s: %s".format(p.decodedName, p.tpe)).mkString("(", ", ", ")")).mkString("")
+
+        //create a new completion proposal object. The execution of 'additionalInfoBuilder' is deferred until the information is really needed
+        buff += new ScalaCompletionProposal(start, name, signature, contextString, additionalInfoBuilder, relevance, image, selectionProvider)
+      }
+>>>>>>> the UI code is out from the ScalaPresentationCompiler
+
+      for (completions <- completed.get.left.toOption) {
+        compiler.askOption { () =>
+          for (completion <- completions) {
+            completion match {
+              case compiler.TypeMember(sym, tpe, accessible, inherited, viaView) if nameMatches(sym) =>
+                addCompletionProposal(sym, tpe, inherited, viaView)
+              case compiler.ScopeMember(sym, tpe, accessible, _) if nameMatches(sym) =>
+                addCompletionProposal(sym, tpe, false, compiler.NoSymbol)
+              case _ =>
+            }
           }
         }
       }
