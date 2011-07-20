@@ -27,13 +27,19 @@ class ScaladocJavadocTest {
           
           def computeComment : String = {
             val pos = SDTTestUtils.positionsOf(src.content, marker).head;
-            val tree =  new Response[Tree]
+            val resp =  new Response[Tree]
             val range = rangePos(src, pos - 2, pos - 2, pos - 1)
-            askTypeAt(range, tree)          
-            tree.get.left.foreach(t => {
-              return buildCommentAsHtml(unit, t.symbol, t.tpe).toString
-            })
-            ""
+            askTypeAt(range, resp)          
+            val r = resp.get
+            if (r.isRight) {
+              //if we are here, then an exception was thrown during parsing
+              println(r.right.get.printStackTrace)    
+              fail(r.right.get.toString)
+            } else
+              r.left.foreach(t => {
+                return buildCommentAsHtml(unit, t.symbol, t.tpe).toString
+              })
+            "UNEXPECTED_ERROR"
           }
 	    }.computeComment
 	  }() 
@@ -42,9 +48,22 @@ class ScaladocJavadocTest {
   val unit = compilationUnit("scaladoc/ScaladocTestData.scala").asInstanceOf[ScalaCompilationUnit];
   
   @Test def scaladocFromLibraryTest() {        
-    assertTrue(computeScaladocComment(unit, "/*<1*/").contains(arrayBufferDoc));     
     assertEquals(arrayBufferSizeDoc, computeScaladocComment(unit, "/*<2*/"));
     assertTrue(computeScaladocComment(unit, "/*<3*/").contains(arrayBufferRemoveDoc));
+  }
+  
+  @Test def scaladocFromProjectFilesTest() {        
+    assertTrue(computeScaladocComment(unit, "/*<5*/").contains(aDocumentedClassDoc));
+  }
+  
+  @Test def unexpectedFailingTests() {     
+    // the following tests fail even if they shouldn't. They might reveal the cause for 
+    // many times delayed display of scaladoc comments in the IDE
+    
+    val arrayBufferClassDoc = computeScaladocComment(unit, "/*<1*/");
+    assertTrue(arrayBufferClassDoc.contains(arrayBufferDocFragment));     
+    
+    assertTrue(computeScaladocComment(unit, "/*<6*/").contains(aDocumentedMethodDoc));
   }
   
   @Test def scaladocHarvestingLimitationsTest() {    
@@ -52,20 +71,7 @@ class ScaladocJavadocTest {
     assertEquals(arrayBufferSizeHintDoc, computeScaladocComment(unit, "/*<4*/"));    
   }
   
-  @Test def scaladocFromProjectFilesTest() {        
-    val c = computeScaladocComment(unit, "/*<5*/");
-    assertTrue(computeScaladocComment(unit, "/*<5*/").contains(aDocumentedClassDoc));
-        
-    val cc = computeScaladocComment(unit, "/*<6*/");
-    assertTrue(computeScaladocComment(unit, "/*<6*/").contains(aDocumentedMethodDoc));
-  }
-  
-  val arrayBufferDoc = 
-"""scala.collection.mutable.ArrayBuffer</div><p>An implementation of the <code>Buffer</code> class using an array to
- represent the assembled sequence internally. Append, update and random
- access take constant time (amortized time). Prepends and removes are
- linear in the buffer size.
-</p><h5>Type Parameters:</h5><ul><li>A -  the type of this arraybuffer's elements .</li></ul>"""
+  val arrayBufferDocFragment = """An implementation of the"""
     
   val arrayBufferSizeDoc = """<h5>override def size: Int</h5><p>The size of this sequence, equivalent to <code>length</code>.</p><p> $willNotTerminateInf
 </p>"""  
