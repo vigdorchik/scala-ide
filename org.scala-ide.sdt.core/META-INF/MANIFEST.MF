@@ -80,6 +80,7 @@ Import-Package:
 Export-Package: 
  scala.tools.eclipse,
  scala.tools.eclipse.actions,
+ scala.tools.eclipse.ext,
  scala.tools.eclipse.formatter,
  scala.tools.eclipse.interpreter,
  scala.tools.eclipse.javaelements,
@@ -91,6 +92,6 @@ Export-Package:
  scala.tools.eclipse.ui,
  scala.tools.eclipse.util,
  scala.tools.eclipse.wizards
-Bundle-RequiredExecutionEnvironment: J2SE-1.5
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ClassPath: .,
  lib/miglayout-3.7.4-swt.jar
