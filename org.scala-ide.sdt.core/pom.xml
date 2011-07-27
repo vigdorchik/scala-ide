@@ -105,7 +105,7 @@
                 <property name="gitLastCommitInfo" value="( can't retrive git's Last Commit Info )"/>
                 <property name="aboutText">
 The Scala IDE for Eclipse
-(c) LAMP/EPFL and Scala Solutions
+(c) LAMP/EPFL and TypeSafe
 
 The Scala IDE for Eclipse provides an integrated environment for creating Scala programs.
 Visit http://scala-ide.org/
@@ -118,11 +118,12 @@ Many thanks to David Bernard, Matt Russell, Mirko Stocker, Joshua Suereth, and a
 Version details :
                 </property>
                 <delete file="${project.basedir}/about.ini" quiet="true"/>
+                <echo message="[TRACE] aboutText : ${aboutText}  ${gitLastCommitInfo}" />
                 <propertyfile
                   file="${project.basedir}/about.ini"
                   comment="Property 'featureImage' contains path to feature image (32x32)">
-                  <entry  key="featureImage" default="" operation="=" value="about.png"/>
-                  <entry  key="aboutText" default="" operation="=" value="${aboutText} ${gitLastCommitInfo}"/>
+                  <entry  key="featureImage" operation="=" value="about.png"/>
+                  <entry  key="aboutText" operation="=" value="${aboutText} ${gitLastCommitInfo}"/>
                 </propertyfile>
               </target>
             </configuration>
