@@ -19,7 +19,8 @@ fi
 set_version()
 {
   OSGI_VERSION=$(echo $1 | sed s/-SNAPSHOT/.qualifier/)
-  ${MAVEN} -f pom.xml org.sonatype.tycho:tycho-versions-plugin:set-version -DnewVersion=$1 -Dscala.version=${SCALA_VERSION}
+  ${MAVEN} -f pom.xml org.eclipse.tycho:tycho-versions-plugin:set-version -DnewVersion=$1 -Dscala.version=${SCALA_VERSION}
+  # ${MAVEN} -f pom.xml org.sonatype.tycho:tycho-versions-plugin:set-version -DnewVersion=$1 -Dscala.version=${SCALA_VERSION}
   # ${MAVEN} -f pom.xml -N versions:set -DnewVersion=$1
   # ${MAVEN} -f pom.xml -N versions:update-child-modules
 }
