@@ -4,6 +4,8 @@ package scala.tools.eclipse.ext
 import org.osgi.framework.BundleContext
 import org.osgi.framework.ServiceReference
 import org.osgi.util.tracker.ServiceTrackerCustomizer
+import org.eclipse.core.runtime.jobs.Job
+import scala.tools.eclipse.util.JobUtils
 
 /**
  * Interface to be implemented by services who want to be notified when the Scala Plugin start.
@@ -16,15 +18,16 @@ trait OnStart {
 
 class ServiceTrackerCustomizer4OnStart(val context :BundleContext) extends ServiceTrackerCustomizer {
 
-  def addingService(sr : ServiceReference) : Object = {
+  def addingService(sr : ServiceReference) : Object = { 
     println("addingService : " + sr)
     val service = context.getService(sr).asInstanceOf[OnStart]
-    println("service : " + service)
-    if (service != null) {
-      service.started(context)
+    JobUtils.askRunInJob("addingService : " + sr, Job.LONG){
+      if (service != null) {
+        service.started(context)
+      }
+      context.ungetService(sr)
     }
-    context.ungetService(sr)
-    service
+    null
   }
 
   def modifiedService(sr : ServiceReference, s : Object) {

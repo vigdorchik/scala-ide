@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.6"?>
+<plugin>
+   <extension point="org.eclipse.ui.preferencePages">
+     <page
+        category="org.scala-ide.sdt.core.preferences"
+        class="org.scala_ide.tracker.ui.UsageReportPreferencesPage"
+        id="org.scala_ide.tracker.ui.UsageReportPreferencesPage"
+        name="Usage Report">
+     </page>
+   </extension>
+</plugin>
