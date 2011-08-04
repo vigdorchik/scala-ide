@@ -13,7 +13,7 @@ Service-Component: OSGI-INF/component_OnStart.xml
 Bundle-ClassPath: .,
  lib/JGoogleAnalyticsTracker-1.2.0.jar
 Require-Bundle: org.scala-ide.scala.library,
- org.eclipse.ui;bundle-version="3.6.2",
- org.eclipse.core.runtime;bundle-version="3.6.0"
+ org.eclipse.ui,
+ org.eclipse.core.runtime
 Export-Package: org.scala_ide.tracker,
  org.scala_ide.tracker.ui
