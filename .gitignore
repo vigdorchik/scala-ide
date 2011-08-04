@@ -1,2 +1,5 @@
 tmp
 *.orig
+workspace
+target
+.scala_dependencies
