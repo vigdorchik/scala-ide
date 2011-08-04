@@ -187,32 +187,11 @@
       </properties>
     </profile>
     <profile>
-      <id>scala-2.8.0</id>
+      <id>scala-2.8.2</id>
       <activation>
         <property>
           <name>scala.version</name>
-          <value>2.8.0</value>
-        </property>
-      </activation>
-      <properties>
-        <scala.version.full>2.8.0.final</scala.version.full>
-        <version.suffix>28</version.suffix>
-      </properties>
-      <repositories>
-        <repository>
-          <id>scala-toolchain-${scala.version.full}</id>
-          <name>Scala Toolchain ${scala.version.full} p2 repository</name>
-          <layout>p2</layout>
-          <url>http://download.scala-ide.org/scala-eclipse-toolchain-osgi-${scala.version.full}</url>
-        </repository>
-      </repositories>
-    </profile>
-    <profile>
-      <id>scala-2.8.2-SNAPSHOT</id>
-      <activation>
-        <property>
-          <name>scala.version</name>
-          <value>2.8.2-SNAPSHOT</value>
+          <value>2.8.2.RC1</value>
         </property>
       </activation>
       <properties>
