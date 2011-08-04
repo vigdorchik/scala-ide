@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="org.scala-ide.tracker">
+   <implementation class="org.scala_ide.tracker.OnStartUsageReport"/>
+   <service>
+      <provide interface="scala.tools.eclipse.ext.OnStart"/>
+   </service>
+</scr:component>

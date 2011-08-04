@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <?pde version="3.6"?>
 
 <target name="scala-ide_wip_1.x_e36" sequenceNumber="1">
@@ -20,8 +19,6 @@
 <location path="${env_var:HOME}/.m2/repository/p2/osgi/bundle/org.scala-refactoring.library/0.3.0.201106282310" type="Directory"/>
 <location path="${project_loc:org.scala-ide.sdt.core}/../org.scala-ide.sdt.compiler.ext/target" type="Directory"/>
 <location includeAllPlatforms="false" includeMode="planner" includeSource="false" type="InstallableUnit">
-<unit id="org.eclipse.pde.build.container.feature.feature.group" version="1.0.0.201105231903-D8FBmFBDIEfUxUu1q5FuCF6z0Og9"/>
-<repository location="http://download.eclipse.org/tools/orbit/downloads/drops/R20110523182458/repository/"/>
 </location>
 </locations>
 <launcherArgs>

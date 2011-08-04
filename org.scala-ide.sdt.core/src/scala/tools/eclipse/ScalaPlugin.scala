@@ -25,7 +25,6 @@ import org.eclipse.ui.{ IEditorInput, IFileEditorInput, PlatformUI, IPartListene
 import org.eclipse.ui.part.FileEditorInput
 import org.eclipse.ui.plugin.AbstractUIPlugin
 import util.SWTUtils.asyncExec
-
 import org.osgi.framework.BundleContext
 import scala.tools.eclipse.javaelements.{ ScalaElement, ScalaSourceFile }
 import scala.tools.eclipse.util.OSGiUtils.pathInBundle
@@ -34,6 +33,7 @@ import scala.tools.eclipse.util.Tracer
 import scala.tools.eclipse.util.Defensive
 import scala.tools.eclipse.markoccurrences.UpdateOccurrenceAnnotationsService
 import org.eclipse.core.runtime.NullProgressMonitor
+import org.osgi.util.tracker.ServiceTracker
 
 object ScalaPlugin {
   var plugin: ScalaPlugin = _
@@ -102,12 +102,17 @@ class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IEl
 
   lazy val templateManager = new ScalaTemplateManager()
   lazy val updateOccurrenceAnnotationsService = new UpdateOccurrenceAnnotationsService()
+  private var _serviceTracker : ServiceTracker = null
 
   private val projects = new HashMap[IProject, ScalaProject]
 
   override def start(context: BundleContext) = {
+    println("starting org.scala-ide.sdt.core")
     super.start(context)
-
+    import scala.tools.eclipse.ext.{OnStart, ServiceTrackerCustomizer4OnStart}
+    _serviceTracker = new ServiceTracker(context, classOf[OnStart].getName, new ServiceTrackerCustomizer4OnStart(context))
+    _serviceTracker.open();
+    println("starting tracker : " + _serviceTracker)
     if (System.getProperty(HEADLESS_TEST) eq null) {
       ResourcesPlugin.getWorkspace.addResourceChangeListener(this, IResourceChangeEvent.PRE_CLOSE | IResourceChangeEvent.POST_CHANGE)
       JavaCore.addElementChangedListener(this)
@@ -117,10 +122,11 @@ class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IEl
       PerspectiveFactory.updatePerspective
       diagnostic.StartupDiagnostics.run
     }
-    Tracer.println("Scala compiler bundle: " + scalaCompilerBundle.getLocation)
+    Tracer.println("Scala compiler bundle z: " + scalaCompilerBundle.getLocation)
   }
 
   override def stop(context: BundleContext) = {
+    _serviceTracker.close()
     ResourcesPlugin.getWorkspace.removeResourceChangeListener(this)
     super.stop(context)
   }
@@ -243,7 +249,7 @@ class ScalaPlugin extends AbstractUIPlugin with IResourceChangeListener with IEl
     val status1 = new Status(level, pluginId, level, msg, t.getOrElse(null))
     getLog.log(status1)
 
-    val status = t match {
+    t match {
       case ce: ControlThrowable =>
         val t2 = { val ex = new Exception; ex.fillInStackTrace; ex }
         val status2 = new Status(
