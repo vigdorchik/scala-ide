@@ -87,7 +87,6 @@ SUCH DAMAGE.
       <import plugin="org.eclipse.core.expressions"/>
       <import plugin="org.eclipse.jface"/>
       <import plugin="org.eclipse.help"/>
-      <import plugin="org.eclipse.jdt.core" version="3.6.0" match="equivalent"/>
       <import plugin="org.eclipse.jdt.core.manipulation"/>
       <import plugin="org.eclipse.jdt.junit"/>
       <import plugin="org.eclipse.ltk.core.refactoring"/>
@@ -96,12 +95,6 @@ SUCH DAMAGE.
       <import plugin="org.eclipse.ui.browser"/>
       <import plugin="org.eclipse.contribution.weaving.jdt"/>
       <import plugin="com.ibm.icu"/>
-      <import plugin="org.eclipse.jface.text" version="3.5.0" match="greaterOrEqual"/>
-      <import plugin="org.eclipse.ui.editors" version="3.5.0" match="greaterOrEqual"/>
-      <import plugin="org.eclipse.jdt.ui" version="3.5.0" match="greaterOrEqual"/>
-      <import plugin="org.eclipse.jdt.core" version="3.5.2" match="greaterOrEqual"/>
-      <import plugin="org.eclipse.debug.ui" version="3.5.2" match="greaterOrEqual"/>
-      <import plugin="org.eclipse.ui.ide" version="3.5.2" match="greaterOrEqual"/>
       <import plugin="scalariform" version="0.1.0" match="greaterOrEqual"/>
       <import plugin="org.slf4j.api"/>
    </requires>
