@@ -9,11 +9,6 @@
 package org.scala_ide.tracker
 
 import org.osgi.framework.{BundleContext, Version}
-
-import com.dmurph.tracking.AnalyticsConfigData
-import com.dmurph.tracking.JGoogleAnalyticsTracker
-import com.dmurph.tracking.JGoogleAnalyticsTracker.GoogleAnalyticsVersion
-
 import scala.tools.eclipse.ext.OnStart
 
 /**
@@ -28,24 +23,34 @@ object OnStartUsageReport {
   def sendTrackingInfo(gaTrackerId : String, appId : String, jdtVersion : Option[Version], scalaVersion : Option[Version], sdtVersion : Option[Version], m2eVersion : Option[Version]) {
     def toMajorMinorMicro(v : Option[Version]) = v.map(x => x.getMajor + "." + x.getMinor + "." + x.getMicro).getOrElse("undef")
     
-    JGoogleAnalyticsTracker.setProxy(System.getenv("http_proxy"))
-    val config = new AnalyticsConfigData(gaTrackerId)
-    val tracker = new JGoogleAnalyticsTracker(config, GoogleAnalyticsVersion.V_4_7_2, JGoogleAnalyticsTracker.DispatchMode.SYNCHRONOUS)
+    //JGoogleAnalyticsTracker.setProxy(System.getenv("http_proxy"))
+    //val config = new AnalyticsConfigData(gaTrackerId)
+    //val tracker = new JGoogleAnalyticsTracker(config, GoogleAnalyticsVersion.V_4_7_2, JGoogleAnalyticsTracker.DispatchMode.SYNCHRONOUS)
     // HACK to be able to use My custom UrlBuilder that take care of appId
-    val builder2 = new GoogleAnalyticsURLBuilder4App(config, appId)
-    val privateBuilderField = classOf[JGoogleAnalyticsTracker].getDeclaredField("builder")
-    privateBuilderField.setAccessible(true)
-    privateBuilderField.set(tracker, builder2)
+    //val builder2 = new GoogleAnalyticsURLBuilder4App(config, appId)
+    //val privateBuilderField = classOf[JGoogleAnalyticsTracker].getDeclaredField("builder")
+    //privateBuilderField.setAccessible(true)
+    //privateBuilderField.set(tracker, builder2)
     
+    val tracker = new GoogleAnalyticsTracker()
+    val ctx = new RequestContext4Eclipse(gaTrackerId)
     val pageURL = String.format("/jdt/%s/scala/%s/sdt/%s", toMajorMinorMicro(jdtVersion), toMajorMinorMicro(scalaVersion), toMajorMinorMicro(sdtVersion))
-    val pageTitle = null
+    val pageTitle = "scala-ide config"
     val hostName = "tracker.scala-ide.org"
+    tracker.trackPageView(ctx, hostName, pageURL, pageTitle)
+/*    
     tracker.trackPageViewFromReferrer(pageURL, pageTitle, hostName, null, null)
     //println("tracker.trackPageView", pageURL, pageTitle, hostName)
     jdtVersion.foreach{ v => tracker.trackEvent("version", "jdt", v.toString) }
     scalaVersion.foreach{ v => tracker.trackEvent("version", "scala", v.toString) }
     sdtVersion.foreach{ v => tracker.trackEvent("version", "sdt", v.toString) }
     m2eVersion.foreach{ v => tracker.trackEvent("version", "m2e", v.toString) }
+*/    
+  }
+  
+  def main(args: Array[String]) {
+	 sendTrackingInfo("UA-24487935-1", "test", Option(new Version("0.0.0.jdtVersion")), Option(new Version("0.0.0.scalaVersion")), Option(new Version("0.0.0.sdtVersion")), Option(new Version("0.0.0.m2eVersion")))
+	 println("DONE")
   }
 }
 

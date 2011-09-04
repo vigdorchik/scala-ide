@@ -10,17 +10,7 @@
   </parent>
   <artifactId>org.scala-ide.tracker</artifactId>
   <packaging>eclipse-plugin</packaging>
-  <version>0.1.0-SNAPSHOT</version>
-  
-  <dependencies>
-    <dependency>
-      <groupId>com.dmurph</groupId>
-      <artifactId>JGoogleAnalyticsTracker</artifactId>
-      <version>1.2.0</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/lib/JGoogleAnalyticsTracker-1.2.0.jar</systemPath>
-    </dependency>
-  </dependencies>
+  <version>0.2.0-SNAPSHOT</version>
   
   <build>
     <plugins>
