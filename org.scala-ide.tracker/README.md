@@ -5,8 +5,8 @@ The goal Of the plugin is to report *anonymous* info about usage of ScalaIDE.
 The data reported are (group by version of the plugin) :
 
 * 0.2.0:
-  * jdt version, scala version, scala-ide version, m2e version,
-  * java version, os name, os version, screen resolution
+  * jdt version, scala version, scala-ide version, m2e version (as event and url for composite)
+  * java version, os name, os version, screen resolution (as browser info)
 * 0.1.0:
   * jdt version, scala version, scala-ide version, m2e version
 
@@ -15,7 +15,7 @@ All data are send to Google Analytics.
 # Todo :
 
 * --use a same "visitor ID" for one installation--
-* send event for each version (like in 0.1.0)
+* --send event for each version (like in 0.1.0)--
 * store the time on IDE as time on page
 * use http proxy configuration from eclispe (Preferences > General > Network)
 * ask user to enable "Usage Data" the first time
@@ -28,7 +28,7 @@ All data are send to Google Analytics.
     * [JGoogleAnalyticsTracker]
   * reuse visitor ID (appId) per eclipse installation (preferences)
   * use user-agent and flash version to send os information and java version
-  * event with individual versions not send (temporary)
+  * send event for individual versions of module
 * 0.1.0 :
   * initial code (use [JGoogleAnalyticsTracker])
 

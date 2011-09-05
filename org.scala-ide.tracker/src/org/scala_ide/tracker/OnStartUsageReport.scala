@@ -22,30 +22,20 @@ object OnStartUsageReport {
    */
   def sendTrackingInfo(gaTrackerId : String, appId : String, jdtVersion : Option[Version], scalaVersion : Option[Version], sdtVersion : Option[Version], m2eVersion : Option[Version]) {
     def toMajorMinorMicro(v : Option[Version]) = v.map(x => x.getMajor + "." + x.getMinor + "." + x.getMicro).getOrElse("undef")
-    
-    //JGoogleAnalyticsTracker.setProxy(System.getenv("http_proxy"))
-    //val config = new AnalyticsConfigData(gaTrackerId)
-    //val tracker = new JGoogleAnalyticsTracker(config, GoogleAnalyticsVersion.V_4_7_2, JGoogleAnalyticsTracker.DispatchMode.SYNCHRONOUS)
-    // HACK to be able to use My custom UrlBuilder that take care of appId
-    //val builder2 = new GoogleAnalyticsURLBuilder4App(config, appId)
-    //val privateBuilderField = classOf[JGoogleAnalyticsTracker].getDeclaredField("builder")
-    //privateBuilderField.setAccessible(true)
-    //privateBuilderField.set(tracker, builder2)
-    
+
     val tracker = new GoogleAnalyticsTracker()
     val ctx = new RequestContext4Eclipse(gaTrackerId)
+
     val pageURL = String.format("/jdt/%s/scala/%s/sdt/%s", toMajorMinorMicro(jdtVersion), toMajorMinorMicro(scalaVersion), toMajorMinorMicro(sdtVersion))
     val pageTitle = "scala-ide config"
     val hostName = "tracker.scala-ide.org"
-    tracker.trackPageView(ctx, hostName, pageURL, pageTitle)
-/*    
-    tracker.trackPageViewFromReferrer(pageURL, pageTitle, hostName, null, null)
-    //println("tracker.trackPageView", pageURL, pageTitle, hostName)
-    jdtVersion.foreach{ v => tracker.trackEvent("version", "jdt", v.toString) }
-    scalaVersion.foreach{ v => tracker.trackEvent("version", "scala", v.toString) }
-    sdtVersion.foreach{ v => tracker.trackEvent("version", "sdt", v.toString) }
-    m2eVersion.foreach{ v => tracker.trackEvent("version", "m2e", v.toString) }
-*/    
+    tracker.trackPageView(ctx, PageInfo(hostName, pageURL, pageTitle))
+
+    def trackVersion(label : String, version : Option[Version]) =  version.foreach{ v => tracker.trackEvent(ctx, EventInfo("version", label, Option(v.toString))) }
+    trackVersion("jdt", jdtVersion)
+    trackVersion("scala", scalaVersion)
+    trackVersion("sdt", sdtVersion)
+    trackVersion("m2e", m2eVersion)
   }
   
   def main(args: Array[String]) {

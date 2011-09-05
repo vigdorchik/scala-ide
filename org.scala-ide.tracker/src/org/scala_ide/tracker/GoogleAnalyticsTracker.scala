@@ -37,6 +37,7 @@ object GoogleAnalyticsConstantes {
 	val PARAM_GAQ = "gaq"
 	val PARAM_AD_CONTENT = "utm_content"
 	val PARAM_JAVA_ENABLED = "utmje"
+	val PARAM_EVENT = "utmt=event&utme"
 
 	val VALUE_TRACKING_CODE_VERSION = "4.7.2";
 	val VALUE_NO_REFERRAL = "0";
@@ -64,6 +65,9 @@ trait RequestContext {
 	def keyword : String
 }
 
+case class PageInfo(hostname : String, path :String, title : String = "")
+case class EventInfo(category : String, action : String, label : Option[String] = None, value : Option[Int] = None)
+
 /**
  * Similar to the original GoogleAnalyticsV4_7_2 but allow to define appId (__utma)
  * to track distinct ide/app like google analytics track distinct browser.
@@ -78,8 +82,14 @@ class GoogleAnalyticsTracker() {
 
   private val _random = new scala.util.Random()
 
-  def trackPageView(ctx : RequestContext, hostname : String = "", pagePath :String = "", pageTitle : String = "") : Int = {
-    val gaUrl =newGAUrlRequest(ctx, hostname, pagePath, pageTitle)
+  def trackPageView(ctx : RequestContext, page : PageInfo) : Int = {
+    val gaUrl = newGAUrlRequest(ctx, page = Option(page))
+    println(gaUrl)
+    httpNotify(gaUrl, ctx.userAgent)
+  }
+  
+  def trackEvent(ctx : RequestContext, event : EventInfo) : Int = {
+    val gaUrl = newGAUrlRequest(ctx, event = Option(event))
     println(gaUrl)
     httpNotify(gaUrl, ctx.userAgent)
   }
@@ -87,13 +97,12 @@ class GoogleAnalyticsTracker() {
   /**
    * @see com.dmurph.tracking.IGoogleAnalyticsURLBuilder#buildURL(com.dmurph.tracking.AnalyticsRequestData)
    */
-  def newGAUrlRequest(ctx : RequestContext, hostname : String = "", pagePath :String = "", pageTitle : String = "") : String = {
+  def newGAUrlRequest(ctx : RequestContext, page : Option[PageInfo] = None, event : Option[EventInfo] = None) : String = {
 
     val cookies = buildCookiesString(ctx)
     var l = List(
       (PARAM_TRACKING_CODE_VERSION,  VALUE_TRACKING_CODE_VERSION)
       , (PARAM_UNIQUE_TRACKING_NUMBER, _random.nextInt.toString) //(Math.random() * 0x7fffffff)
-      , (PARAM_HOST_NAME, hostname)
       , (PARAM_LANGUAGE_ENCODING, VALUE_ENCODING_UTF8)
       , (PARAM_SCREEN_RESOLUTION, ctx.screenResolution)
       , (PARAM_SCREEN_COLOR_DEPTH, ctx.screenColorDepth + SCREENCOLORDEPTH_POSTFIX)
@@ -123,9 +132,15 @@ class GoogleAnalyticsTracker() {
 //    } else if(argData.getEventAction() != null || argData.getEventCategory() != null) {
 //      throw new IllegalArgumentException("Event tracking must have both a category and an action");
 //    }
-
-    l = (PARAM_PAGE_TITLE, pageTitle) :: (PARAM_PAGE_REQUEST, pagePath) :: l 
-
+    for (p <- page) {
+      l = (PARAM_HOST_NAME, p.hostname) :: (PARAM_PAGE_TITLE, p.title) :: (PARAM_PAGE_REQUEST, p.path) :: l 
+    }
+    for (e <- event) {
+      var value = e.value.map("(" + _ +")").getOrElse("")
+      var label = e.label.map("*" + _ ).getOrElse("")
+      var paramValue="5(%s*%s%s)%s".format(e.category, e.action, label, value)
+      l = (PARAM_EVENT, paramValue) :: l 
+    }
 
     l.collect{ case (k,v) => k + "=" + encodeURIString(v) }.mkString(URL_BASE, "&", "")
   }    
