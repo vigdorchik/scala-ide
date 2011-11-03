@@ -32,6 +32,12 @@ class ScalaSbtCompiler(val settings: Settings,
         val scalaInstance: ScalaInstance,
         val cp: ClasspathOptions,
         reporter: Reporter) {
+  
+  /** Code Review: Hubert added 'Settings' on the compiler interface, because we
+   *  need to pass 'outputDirs', and that can't be done through strings.
+   *  
+   *  Mark: you can't reference any compiler classes from this side of the interface.
+   */
   def compile(args: Seq[String], callback: AnalysisCallback, maxErrors:Int, log: Logger, contr: Controller, s: Settings) {
     val cInterface = new xsbt.CompilerInterface
     val properSettingsWithErrorReporting = SettingsCleanup(s, log)

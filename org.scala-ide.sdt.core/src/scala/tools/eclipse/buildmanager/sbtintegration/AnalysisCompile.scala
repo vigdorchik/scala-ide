@@ -22,6 +22,12 @@ import scala.tools.eclipse.util.EclipseResource
 import java.io.File
 import scala.tools.eclipse.util.HasLogger
 
+/** Code Review: Hubert: A modified copy of SBT code. 
+ * Mark: we could make SBT accept a function for Scalac and Javac, so we can pass them over
+ *       from the IDE
+ *       
+ * Hubert: SBT uses the JDK from the PATH -- Eclipse needs to put its own
+ */
 class AnalysisCompile (conf: BasicConfiguration, bm: EclipseSbtBuildManager, contr: Controller) extends HasLogger {
     import AnalysisFormats._
     private lazy val store = AnalysisStore.sync(AnalysisStore.cached(FileBasedStore(EclipseResource(conf.cacheLocation).file)))
@@ -50,6 +56,7 @@ class AnalysisCompile (conf: BasicConfiguration, bm: EclipseSbtBuildManager, con
               sources: Seq[File],  reporter: Reporter, settings: Settings,
               compOrder: CompileOrder.Value, compOptions: Seq[String] = Nil,
               javaSrcBases: Seq[File] = Nil, javacOptions: Seq[String] = Nil, 
+              /** Code Review: Mark: This map should map dependent projects to their Analysis cache. Right now it's empty. */
               analysisMap: Map[File, Analysis] = Map.empty, maxErrors: Int = 100)(implicit log: EclipseLogger): Analysis = {
 
         val currentSetup = new CompileSetup(conf.outputDirectory, new CompileOptions(compOptions, javacOptions),
@@ -63,9 +70,17 @@ class AnalysisCompile (conf: BasicConfiguration, bm: EclipseSbtBuildManager, con
         }
         val apiOption = (api: Either[Boolean, Source]) => api.right.toOption
         val compArgs = new CompilerArguments(scalac.scalaInstance, scalac.cp)
+        
+        /** Code Review: Mark: to remove all this copied code, properly set the bootclasspath to SBT 
+         *  - in the options. 
+         */
+        
         val searchClasspath = withBootclasspath(compArgs, conf.classpath)
         val entry = Locate.entry(searchClasspath, Locate.definesClass) // use default defineClass for now
         
+        /** Code Review: Mark: This would be handled by SBT.
+         *  Hubert: when calling incremental...you need it.
+         */
         val ((previousAnalysis, previousSetup), tm) = util.Utils.timed(extract(store.get))
         
         logger.debug("API store loaded in %0,3d ms".format(tm))

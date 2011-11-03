@@ -21,6 +21,10 @@ import scala.tools.eclipse.util.HasLogger
 // The following code is based on sbt.AggressiveCompile
 // Copyright 2010 Mark Harrah
 
+
+/** Code Review: Mark says we could expose this from SBT directly
+ We need to see how we can support 2.8 (SBT does NOT maintain source compatbility with 2.8)
+ */
 private object SbtConverter {
 	// This piece of code is directly copied from sbt sources. There
   // doesn't seem to be other way atm to convert between sbt and scala compiler reporting
@@ -221,6 +225,8 @@ class EclipseSbtBuildManager(project: ScalaProject, settings0: Settings)
   
   var monitor: SubMonitor = _
   
+  /** Code Review: Controller is a new type added by Hubert. 
+   */
   class SbtProgress extends Controller {
 	  private var lastWorked = 0
 	  private var savedTotal = 0
@@ -236,7 +242,11 @@ class EclipseSbtBuildManager(project: ScalaProject, settings0: Settings)
 	      monitor.subTask("phase " + phaseName + " for " + unitIPath.makeRelativeTo(projectPath))
 	    }
 	  }
-	  
+	  /** Code Review: Mark wants to discuss this. Cancelling is usually done through
+	   *  Thread.interrupt()
+	   *  
+	   *  Progress reporting:  
+	   */
 	  def runProgress(current: Int, total: Int): Boolean = 
 	    if (monitor.isCanceled) {
 	      false

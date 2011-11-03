@@ -8,6 +8,11 @@ import java.io.File
 import org.eclipse.core.resources.ResourcesPlugin
 import scala.tools.eclipse.util.HasLogger
 
+/** Code Review: Mark: you can build ScalaInstance directly (not through .apply methods)
+ *  and then you don't need to pass a launcher!
+ *  
+ *  Hubert is happy, we can drop a dependency on sbt-launcher.jar.
+ */
 object ScalaCompilerConf {
     val LIBRARY_SUFFIX = "scala-library.jar"
     val COMPILER_SUFFIX = "scala-compiler.jar"
