@@ -249,7 +249,7 @@ trait ScalaCompilationUnit extends Openable
         }
       
         def performCodeSelect = { 
-          val resp = new Response[Tree]
+          val resp = new compiler.Response[Tree]
           val range = rangePos(src, offset, offset, offset + length)
           askTypeAt(range, resp)
           val r = resp.get.left.toOption.map(computeJavaElement(_)).flatten.headOption

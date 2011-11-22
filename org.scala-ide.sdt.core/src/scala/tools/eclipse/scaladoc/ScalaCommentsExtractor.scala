@@ -16,7 +16,8 @@ trait ScalaCommentsExtractor { self : ScalaPresentationCompiler =>
       sym.varianceString + sym.nameString + sym.infoString(tpeinfo)))
   }
 
-  def extractComment(sym : Symbol, scu : ScalaCompilationUnit) = {
+  /** Return the expanded and the raw comment for the given symbol. */
+  def extractComment(sym : Symbol, scu : ScalaCompilationUnit): (String, String) = {
     val loc = locate(sym, scu)
     loc match {
       case Some((scf: ScalaClassFile, pos)) =>

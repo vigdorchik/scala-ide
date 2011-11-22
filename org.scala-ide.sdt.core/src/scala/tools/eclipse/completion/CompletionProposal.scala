@@ -1,4 +1,5 @@
 package scala.tools.eclipse.completion
+import org.eclipse.jdt.core.IJavaElement
 
 object HasArgs extends Enumeration {
   val NoArgs, EmptyArgs, NonEmptyArgs = Value
@@ -28,8 +29,9 @@ case class CompletionProposal(kind: MemberKind.Value,
   relevance: Int,
   hasArgs: HasArgs.Value,
   isJava: Boolean,
-  fullyQualifiedName: String, // for Class, Trait, Type, Objects: the fully qualified name
-  needImport: Boolean        // for Class, Trait, Type, Objects: import statement has to be added
+  docString: () => Option[String],   // optional Scaladoc/Javadoc
+  fullyQualifiedName: String,  // for Class, Trait, Type, Objects: the fully qualified name
+  needImport: Boolean          // for Class, Trait, Type, Objects: import statement has to be added
 )
 
 /** The kind of a completion proposal. */

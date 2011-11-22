@@ -7,6 +7,10 @@ import org.eclipse.jdt.core.IJavaElement
 import scala.collection.mutable
 import org.eclipse.core.runtime.NullProgressMonitor
 import scala.tools.eclipse.util.HasLogger
+import scala.tools.eclipse.scaladoc.ScaladocCommentsToEclipseHtmlTransformer
+import org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2
+import org.eclipse.jdt.internal.core.JavaElement
+import org.eclipse.jdt.core.IMember
 
 /** Base class for Scala completions. No UI dependency, can be safely used in a
  *  headless testing environment.
@@ -17,53 +21,80 @@ class ScalaCompletions extends HasLogger {
   import org.eclipse.jface.text.IRegion
   
   def findCompletions(region: IRegion)(position: Int, scu: ScalaCompilationUnit)
-                             (sourceFile: SourceFile, compiler: ScalaPresentationCompiler): List[CompletionProposal] = {
+                             (sourceFile: SourceFile, comp: ScalaPresentationCompiler): List[CompletionProposal] = {
+    val converter = new ScaladocCommentsToEclipseHtmlTransformer { val compiler: comp.type = comp }
+
+    /** Return the scaladoc/javadoc string for the given symbol and type, if found. 
+     *  Since this may be a long-running operation, we return a thunk.
+     */
+    def docString(sym: comp.Symbol, tpe: comp.Type)(): Option[String] = {
+      if (sym.isJavaDefined) {
+        comp.getJavaElement2(sym) match {
+          case Some(element) =>
+            javaDocString(element)().orElse(Some(converter.buildCommentAsHtml(scu, sym, tpe).toString))
+          case _ =>
+            logger.info("getJavaElement2 did not find the corresponding Java element for symbol " + sym.fullName)
+            None
+        }
+      } else Some(converter.buildCommentAsHtml(scu, sym, tpe).toString)
+    }
+
+    /** Return the Javadoc for the given Java element.
+     *  Since this is a long-running operation, we return a thunk.
+     */
+    def javaDocString(element: IMember)() = {
+      val info = JavadocContentAccess2.getHTMLContent(element, true) //element.getAttachedJavadoc(null)         
+      if (info != null && info.length() > 0)
+        Some(info)
+      else
+        None
+    }
     
-    val pos = compiler.rangePos(sourceFile, position, position, position)
+    val pos = comp.rangePos(sourceFile, position, position, position)
     
     val start = if (region == null) position else region.getOffset
     
-    val typed = new compiler.Response[compiler.Tree]
-    compiler.askTypeAt(pos, typed)
+    val typed = new comp.Response[comp.Tree]
+    comp.askTypeAt(pos, typed)
     val t1 = typed.get.left.toOption
 
-    val completed = new compiler.Response[List[compiler.Member]]
+    val completed = new comp.Response[List[comp.Member]]
     // completion depends on the typed tree
     t1 match {
       // completion on select
-      case Some(s@compiler.Select(qualifier, name)) if qualifier.pos.isDefined && qualifier.pos.isRange =>
+      case Some(s@comp.Select(qualifier, name)) if qualifier.pos.isDefined && qualifier.pos.isRange =>
         val cpos0 = qualifier.pos.end 
-        val cpos = compiler.rangePos(sourceFile, cpos0, cpos0, cpos0)
-        compiler.askTypeCompletion(cpos, completed)
-      case Some(compiler.Import(expr, _)) =>
+        val cpos = comp.rangePos(sourceFile, cpos0, cpos0, cpos0)
+        comp.askTypeCompletion(cpos, completed)
+      case Some(comp.Import(expr, _)) =>
         // completion on `imports`
         val cpos0 = expr.pos.endOrPoint
-        val cpos = compiler.rangePos(sourceFile, cpos0, cpos0, cpos0)
-        compiler.askTypeCompletion(cpos, completed)
+        val cpos = comp.rangePos(sourceFile, cpos0, cpos0, cpos0)
+        comp.askTypeCompletion(cpos, completed)
       case _ =>
         // this covers completion on `types`
-        val cpos = compiler.rangePos(sourceFile, start, start, start)
-        compiler.askScopeCompletion(cpos, completed)
+        val cpos = comp.rangePos(sourceFile, start, start, start)
+        comp.askScopeCompletion(cpos, completed)
     }
     
     val prefix = (if (position <= start) "" else scu.getBuffer.getText(start, position-start).trim).toArray
     
-    def nameMatches(sym : compiler.Symbol) = prefixMatches(sym.decodedName.toString.toArray, prefix)
+    def nameMatches(sym : comp.Symbol) = prefixMatches(sym.decodedName.toString.toArray, prefix)
     
     val buff = new mutable.ListBuffer[CompletionProposal]
     
     def alreadyListed(fullyQualifiedName: String) = buff.exists((completion) => fullyQualifiedName.equals(completion.fullyQualifiedName))
 
     for (completions <- completed.get.left.toOption) {
-      compiler.askOption { () =>
+      comp.askOption { () =>
         for (completion <- completions) {
           completion match {
-            case compiler.TypeMember(sym, tpe, accessible, inherited, viaView) if !sym.isConstructor && nameMatches(sym) =>
-              val completionProposal= compiler.mkCompletionProposal(start, sym, tpe, inherited, viaView)
+            case comp.TypeMember(sym, tpe, accessible, inherited, viaView) if !sym.isConstructor && nameMatches(sym) =>
+              val completionProposal= comp.mkCompletionProposal(start, sym, tpe, inherited, viaView, docString(sym, tpe))
               if (!alreadyListed(completionProposal.fullyQualifiedName))
                 buff += completionProposal
-            case compiler.ScopeMember(sym, tpe, accessible, _) if !sym.isConstructor && nameMatches(sym) =>
-              val completionProposal= compiler.mkCompletionProposal(start, sym, tpe, false, compiler.NoSymbol)
+            case comp.ScopeMember(sym, tpe, accessible, _) if !sym.isConstructor && nameMatches(sym) =>
+              val completionProposal= comp.mkCompletionProposal(start, sym, tpe, false, comp.NoSymbol, docString(sym, tpe))
               if (!alreadyListed(completionProposal.fullyQualifiedName))
               	buff += completionProposal
             case _ =>
@@ -115,6 +146,7 @@ class ScalaCompletions extends HasLogger {
 	            50,
 	            HasArgs.NoArgs,
 	            true,
+	            javaDocString(scu.getJavaProject().findType(fullyQualifiedName)),
 	            fullyQualifiedName,
 	            true)
 	      }

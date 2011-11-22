@@ -3,7 +3,7 @@ package ui
 
 import completion._
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal
-import org.eclipse.jface.text.contentassist.{ ICompletionProposalExtension, ICompletionProposalExtension6, IContextInformation }
+import org.eclipse.jface.text.contentassist.{ ICompletionProposalExtension, ICompletionProposalExtension3, ICompletionProposalExtension5, ICompletionProposalExtension6, IContextInformation }
 import org.eclipse.swt.graphics.Image
 import org.eclipse.jface.text.IDocument
 import org.eclipse.jface.viewers.{ISelectionProvider, StyledString}
@@ -13,6 +13,13 @@ import org.eclipse.jdt.internal.ui.JavaPluginImages
 import refactoring.EditorHelpers
 import refactoring.EditorHelpers._
 import scala.tools.refactoring.implementations.AddImportStatement
+import org.eclipse.jdt.internal.ui.text.java.hover.JavadocBrowserInformationControlInput
+import org.eclipse.core.runtime.IProgressMonitor
+import org.eclipse.jface.text.IInformationControlCreator
+import org.eclipse.jface.internal.text.html.BrowserInformationControl
+import org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover
+import scala.tools.eclipse.util.EclipseUtils
+import org.eclipse.jface.internal.text.html.HTMLPrinter
 
 
 /** A UI class for displaying completion proposals.
@@ -20,8 +27,13 @@ import scala.tools.refactoring.implementations.AddImportStatement
  *  It adds parenthesis at the end of a proposal if it has parameters, and places the caret
  *  between them.
  */
-class ScalaCompletionProposal(proposal: CompletionProposal, selectionProvider: ISelectionProvider) 
-    extends IJavaCompletionProposal with ICompletionProposalExtension with ICompletionProposalExtension6 {
+class ScalaCompletionProposal(proposal: CompletionProposal, 
+      selectionProvider: ISelectionProvider) 
+    extends IJavaCompletionProposal 
+    with ICompletionProposalExtension 
+    with ICompletionProposalExtension3
+    with ICompletionProposalExtension5
+    with ICompletionProposalExtension6 with JavadocUtils {
   
   import proposal._
   import ScalaCompletionProposal._
@@ -68,11 +80,47 @@ class ScalaCompletionProposal(proposal: CompletionProposal, selectionProvider: I
          styledString.append(" - ", StyledString.QUALIFIER_STYLER).append(displayDetail, StyledString.QUALIFIER_STYLER)
       styledString
     }
-  
-  /**
-   * Some additional info (like javadoc ...)
+
+  /** Some additional info (like javadoc ...)
    */
-  def getAdditionalProposalInfo() = null
+  def getAdditionalProposalInfo(monitor: IProgressMonitor): Object = additionalInfoBuilder();
+
+  def additionalInfoBuilder(): JavadocBrowserInformationControlInput = {
+    import org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2
+    val buffer = new StringBuffer();
+    HTMLPrinter.insertPageProlog(buffer, 0, styleSheet);
+
+    buffer.append(docString().getOrElse(""))
+
+    HTMLPrinter.addPageEpilog(buffer);
+    return new JavadocBrowserInformationControlInput(null, null, buffer.toString, 0);
+  }
+  
+  def getAdditionalProposalInfo() = {
+    val res = additionalInfoBuilder()
+    if (res != null) res.toString else "No Proposal Info"
+  }
+
+  def getInformationControlCreator(): IInformationControlCreator =
+    informationControlCreator
+
+  lazy val informationControlCreator = {
+    import org.eclipse.jdt.internal.ui.JavaPlugin;
+    val shell = JavaPlugin.getActiveWorkbenchShell();
+    if (!BrowserInformationControl.isAvailable(shell))
+      null
+    else {
+      val presenterControlCreator = new JavadocHover.PresenterControlCreator(EclipseUtils.getWorkbenchSite);
+      new JavadocHover.HoverControlCreator(presenterControlCreator, true);
+    }
+  }
+  
+  def getPrefixCompletionText(document : IDocument, completionOffset : Int) : CharSequence = ""
+      
+  def getPrefixCompletionStart(document : IDocument, completionOffset : Int) : Int = 
+    startPos;
+      
+  
   def getSelection(d: IDocument) = null
   def apply(d: IDocument) { throw new IllegalStateException("Shouldn't be called") }
 

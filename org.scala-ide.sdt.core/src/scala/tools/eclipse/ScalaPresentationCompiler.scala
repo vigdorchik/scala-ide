@@ -23,6 +23,9 @@ import scala.tools.nsc.util.FailedInterrupt
 import scala.tools.nsc.symtab.Flags
 import scala.tools.eclipse.completion.CompletionProposal
 import scala.tools.eclipse.scaladoc.ScalaCommentsExtractor
+import scala.tools.eclipse.scaladoc.ScaladocCommentsToEclipseHtmlTransformer
+import org.eclipse.jdt.internal.ui.text.javadoc.JavadocContentAccess2
+import scala.tools.eclipse.javaelements.ScalaCompilationUnit
 
 class ScalaPresentationCompiler(project : ScalaProject, settings : Settings)
   extends Global(settings, new ScalaPresentationCompiler.PresentationReporter, project.underlying.getName)
@@ -220,7 +223,7 @@ class ScalaPresentationCompiler(project : ScalaProject, settings : Settings)
    *  TODO We should have a more refined strategy based on the context (inside an import, case
    *       pattern, 'new' call, etc.)
    */
-  def mkCompletionProposal(start: Int, sym: Symbol, tpe: Type, inherited: Boolean, viaView: Symbol): CompletionProposal = {
+  def mkCompletionProposal(start: Int, sym: Symbol, tpe: Type, inherited: Boolean, viaView: Symbol, docString: () => Option[String]): CompletionProposal = {
     import scala.tools.eclipse.completion.MemberKind._
     
      val kind = if (sym.isSourceMethod && !sym.hasFlag(Flags.ACCESSOR | Flags.PARAMACCESSOR)) Def
@@ -265,6 +268,7 @@ class ScalaPresentationCompiler(project : ScalaProject, settings : Settings)
          relevance,
          HasArgs.from(sym.paramss),
          sym.isJavaDefined,
+         docString,
          sym.fullName,
          false)
   }
