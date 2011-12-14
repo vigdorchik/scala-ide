@@ -46,6 +46,18 @@ trait BuildSuccessListener {
 
 object ScalaProject {
   def apply(underlying: IProject) = new ScalaProject(underlying)
+   
+ 
+  // look for all package fragment roots containing instances of scala.Predef
+  def allScalaPredefPaths(project0: IJavaProject): List[IPackageFragmentRoot] = {
+    project0.getAllPackageFragmentRoots().map( fragmentRoot => {
+      val fragment = fragmentRoot.getPackageFragment("scala")
+      fragmentRoot.getKind() match {
+        case IPackageFragmentRoot.K_BINARY =>
+          if (fragment.getClassFile("Predef.class").exists()) Some(fragmentRoot) else None
+        case _ => None // look only in jars. SBT doesn't start without one, and refined is not really happy either
+      }}).flatten.toList
+  }
 }
 
 class ScalaProject private (val underlying: IProject) extends HasLogger {
@@ -458,18 +470,7 @@ class ScalaProject private (val underlying: IProject) extends HasLogger {
   }
 
   private def checkClasspath() {
-    // look for all package fragment roots containing instances of scala.Predef
-    val fragmentRoots = new ListBuffer[IPackageFragmentRoot]
-    for (fragmentRoot <- javaProject.getAllPackageFragmentRoots()) {
-      val fragment = fragmentRoot.getPackageFragment("scala")
-      fragmentRoot.getKind() match {
-        case IPackageFragmentRoot.K_BINARY =>
-          if (fragment.getClassFile("Predef.class").exists())
-            fragmentRoots += fragmentRoot
-        case _ => // look only in jars. SBT doesn't start without one, and refined is not really happy either
-      }
-    }
-
+    val fragmentRoots = ScalaProject.allScalaPredefPaths(javaProject)
     // check the found package fragment roots
     fragmentRoots.length match {
       case 0 => // unable to find any trace of scala library

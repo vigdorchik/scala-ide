@@ -282,7 +282,6 @@ class EclipseSbtBuildManager(val project: ScalaProject, settings0: Settings)
 	}
 	
 	lazy val scalaVersion = {
-	  // For the moment fixed to 2.9.0
 	  ScalaPlugin.plugin.scalaVer
 	}
 	

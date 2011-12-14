@@ -24,26 +24,32 @@ object Nature {
   }
   
   /**
-   * Removes any existing scala library from the classpath, and adds the ScalaPlugin.scalaLibId 
-   * library container to the classpath. Saves the project settings of `jp`.
+   * Remove all old Scala containers that have scala-library. If scala library was added by hand or by other (non-scala) container
+   * we leave as it is and we don't add any new container. The version is checked by the classpath validator and it is users
+   * responsibility to make sure that the versions match.
+   * If no other scala library exists then we add the ScalaPlugin.scalaLibId library container to the classpath.
+   * Saves the project settings of `jp`.
    */
   def addScalaLibAndSave(project: IProject) {
     val jp = JavaCore.create(project)
     Nature.removeScalaLib(jp)
     
-    // Put the Scala classpath container before JRE container
-    val buf = ArrayBuffer(jp.getRawClasspath : _*)    
-    val scalaLibEntry = JavaCore.newContainerEntry(Path.fromPortableString(plugin.scalaLibId))
-    val jreIndex = buf.indexWhere(_.getPath.toPortableString.startsWith(JavaRuntime.JRE_CONTAINER))
-    if (jreIndex != -1) {
-      buf.insert(jreIndex, scalaLibEntry)
-    } else {
-      buf += scalaLibEntry
-      buf += JavaCore.newContainerEntry(Path.fromPortableString(JavaRuntime.JRE_CONTAINER))
-    }
-    jp.setRawClasspath(buf.toArray, null)
+    val previousScalaLibs = ScalaProject.allScalaPredefPaths(jp)
+    if (previousScalaLibs.length == 0) {
+      // Put the Scala classpath container before JRE container
+      val buf = ArrayBuffer(jp.getRawClasspath : _*)
+      val scalaLibEntry = JavaCore.newContainerEntry(Path.fromPortableString(plugin.scalaLibId))
+      val jreIndex = buf.indexWhere(_.getPath.toPortableString.startsWith(JavaRuntime.JRE_CONTAINER))
+      if (jreIndex != -1) {
+        buf.insert(jreIndex, scalaLibEntry)
+      } else {
+        buf += scalaLibEntry
+        buf += JavaCore.newContainerEntry(Path.fromPortableString(JavaRuntime.JRE_CONTAINER))
+      }
+      jp.setRawClasspath(buf.toArray, null)
     
-    jp.save(null, true)    
+      jp.save(null, true)
+    }
   }
 }
 

@@ -40,7 +40,7 @@ class ScalaBuilder extends IncrementalProjectBuilder with HasLogger {
     
     // check the classpath
     if (!project.isClasspathValid()) {
-      // bail out is the classpath in not valid
+      // bail out if the classpath in not valid
       return new Array[IProject](0)
     }
 
