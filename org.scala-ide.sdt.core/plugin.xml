@@ -2,6 +2,8 @@
 <?eclipse version="3.2"?>
 <plugin>
    <extension-point id="reconciliationParticipants" name="Reconcilation Participants" schema="schema/reconciliationParticipants.exsd"/>
+   <extension-point id="compilerSettingsExtension" name="Compiler Settings" schema="schema/compilerSettingsExtension.exsd"/>
+   <extension-point id="buildReporting" name="Build Reporting" schema="schema/buildReporting.exsd"/>
    <extension
          point="org.eclipse.ui.propertyPages">
       <page

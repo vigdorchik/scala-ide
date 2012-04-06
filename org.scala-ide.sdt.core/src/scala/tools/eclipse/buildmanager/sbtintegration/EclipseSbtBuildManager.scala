@@ -20,6 +20,7 @@ import scala.tools.eclipse.logging.HasLogger
 import sbt.inc.{ AnalysisFormats, AnalysisStore, Analysis, FileBasedStore }
 import org.eclipse.core.resources.IProject
 import sbinary.DefaultProtocol.{ immutableMapFormat, immutableSetFormat, StringFormat }
+import scala.tools.eclipse.util.ExtensionPointUtils
 
 // The following code is based on sbt.AggressiveCompile
 // Copyright 2010 Mark Harrah
@@ -265,8 +266,28 @@ class EclipseSbtBuildManager(val project: ScalaProject, settings0: Settings)
 	val compiler = null
 	var depFile: IFile = null
 	
-	private[sbtintegration] lazy val _buildReporter = new BuildReporter(project, settings0) {
+	private[sbtintegration] lazy val _buildReporter = new BuildReporter(project, settings0) with ExtensionPointUtils {
+	  val eclipseProject = EclipseSbtBuildManager.this.project.underlying
 		val buildManager = EclipseSbtBuildManager.this
+
+	  final val BUILD_REPORTING_EXTENSION = "org.scala-ide.sdt.core.buildReporting"
+    lazy val buildReportingExtensions = discoverExtensions[BuildReportingExtension](BUILD_REPORTING_EXTENSION)
+
+		override def info0(pos: Position, msg: String, severity: Severity, force: Boolean) = {
+
+      val messageHandled = try {
+        buildReportingExtensions map (_.handle(eclipseProject, pos, msg, severity)) exists true.==
+      } catch {
+        // Whatever happens, we don't want to crash the SBT compiler:
+        case e: Exception =>
+          logger.error(e)
+          false
+      }
+
+      if(!messageHandled) {
+        super.info0(pos, msg, severity, force)
+      }
+    }
 	}
 	
 	lazy val reporter: xsbti.Reporter = new SbtBuildReporter(_buildReporter)

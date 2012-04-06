@@ -10,6 +10,7 @@ import org.eclipse.jdt.core.WorkingCopyOwner
 import scala.tools.eclipse.javaelements.ScalaCompilationUnit
 import scala.tools.eclipse.logging.HasLogger
 import scala.tools.eclipse.util.Utils
+import scala.tools.eclipse.util.ExtensionPointUtils
 
 /**
  * The implementation for the org.scala-ide.sdt.core.reconciliationParticipants
@@ -20,21 +21,11 @@ import scala.tools.eclipse.util.Utils
  * 
  * @author Mirko Stocker
  */
-object ReconciliationParticipantsExtensionPoint extends HasLogger {
+object ReconciliationParticipantsExtensionPoint extends ExtensionPointUtils with HasLogger {
   
   final val PARTICIPANTS_ID = "org.scala-ide.sdt.core.reconciliationParticipants"
     
-  lazy val extensions: List[ReconciliationParticipant] = {
-    val configs = Platform.getExtensionRegistry.getConfigurationElementsFor(PARTICIPANTS_ID).toList
-
-    configs map { e =>
-      Utils.tryExecute {
-        e.createExecutableExtension("class")
-      }
-    } collect {
-      case Some(p: ReconciliationParticipant) => p
-    }
-  }
+  lazy val extensions = discoverExtensions[ReconciliationParticipant](PARTICIPANTS_ID)
   
   def runBefore(scu: ScalaCompilationUnit, monitor: IProgressMonitor, workingCopyOwner: WorkingCopyOwner) {
     extensions foreach { extension =>

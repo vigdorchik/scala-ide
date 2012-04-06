@@ -40,6 +40,9 @@ import scala.tools.nsc.util.BatchSourceFile
 import java.io.InputStream
 import java.io.InputStreamReader
 import scala.tools.eclipse.util.Trim
+import org.eclipse.core.runtime.Platform
+import scala.tools.eclipse.util.ExtensionPointUtils
+import scala.tools.eclipse.buildmanager.CompilerSettingsExtension
 
 trait BuildSuccessListener {
   def buildSuccessful(): Unit
@@ -49,7 +52,7 @@ object ScalaProject {
   def apply(underlying: IProject) = new ScalaProject(underlying)
 }
 
-class ScalaProject private (val underlying: IProject) extends HasLogger {
+class ScalaProject private (val underlying: IProject) extends ExtensionPointUtils with HasLogger {
   import ScalaPlugin.plugin
 
   private var classpathUpdate: Long = IResource.NULL_STAMP
@@ -61,6 +64,9 @@ class ScalaProject private (val underlying: IProject) extends HasLogger {
   private var classpathValid= false;
   
   private val buildListeners = new mutable.HashSet[BuildSuccessListener]
+
+  private final val COMPILER_SETTINGS_EXTENSION = "org.scala-ide.sdt.core.compilerSettingsExtension"
+  private lazy val compilerSettingsExtensions = discoverExtensions[CompilerSettingsExtension](COMPILER_SETTINGS_EXTENSION)
 
   case class InvalidCompilerSettings() extends RuntimeException(
         "Scala compiler cannot initialize for project: " + underlying.getName +
@@ -589,11 +595,16 @@ class ScalaProject private (val underlying: IProject) extends HasLogger {
         case t: Throwable => eclipseLog.error("Unable to set setting '" + setting.name + "' to '" + value0 + "'", t)
       }
     }
-    
+
     // handle additional parameters
     val additional = store.getString(CompilerSettings.ADDITIONAL_PARAMS)
     logger.info("setting additional paramters: " + additional)
     settings.processArgumentString(additional)
+
+    // handle settings contributed via the compiler settings extension point
+    compilerSettingsExtensions foreach {
+      _.modifySettings(underlying, settings)
+    }
   }
 
   private def buildManagerInitialize: String =

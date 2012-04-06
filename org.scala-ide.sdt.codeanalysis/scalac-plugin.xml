@@ -1,0 +1,4 @@
+<plugin>
+  <name>codeanalysis</name>
+  <classname>scala.tools.eclipse.codeanalysis.plugin.CodeAnalysisPlugin</classname>
+</plugin>
