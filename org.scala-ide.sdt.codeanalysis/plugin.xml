@@ -11,6 +11,12 @@
           msgPattern="Unused Import %s">
     </analyzer>
     <analyzer
+          class="scala.tools.eclipse.codeanalysis.analyzers.NonLocalReturn"
+          id="org.scala-ide.sdt.codeanalysis.nonlocalreturn"
+          name="Non-Local Return"
+          msgPattern="Non-local return found">
+    </analyzer>
+    <analyzer
           class="scala.tools.eclipse.codeanalysis.analyzers.ClassFileNameMismatch"
           id="org.scala-ide.sdt.codeanalysis.classfilenamemismatch"
           name="Class/File-Name Mismatch"
