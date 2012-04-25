@@ -2,19 +2,20 @@
 <!-- Schema file written by PDE -->
 <schema targetNamespace="org.scala-ide.sdt.codeanalysis" xmlns="http://www.w3.org/2001/XMLSchema">
 <annotation>
-      <appinfo>
+      <appInfo>
          <meta.schema plugin="org.scala-ide.sdt.codeanalysis" id="scalaCodeAnalysis" name="Scala Code Analysis"/>
-      </appinfo>
+      </appInfo>
       <documentation>
-         This extension point can be used to extend the scala compilation phase with static code analysis extensions.
+         This extension point can be used to extend the scala compilation phase with static code analysis extensions. Note that because of the interaction between Eclipes and SBT, the contributions to this extension point need to be part of this
+plug-in-
       </documentation>
    </annotation>
 
    <element name="extension">
       <annotation>
-         <appinfo>
+         <appInfo>
             <meta.element />
-         </appinfo>
+         </appInfo>
       </annotation>
       <complexType>
          <sequence minOccurs="1" maxOccurs="unbounded">
@@ -39,9 +40,9 @@
                <documentation>
 
                </documentation>
-               <appinfo>
+               <appInfo>
                   <meta.attribute translatable="true"/>
-               </appinfo>
+               </appInfo>
             </annotation>
          </attribute>
       </complexType>
@@ -71,9 +72,9 @@
                <documentation>
 
                </documentation>
-               <appinfo>
+               <appInfo>
                   <meta.attribute kind="java" basedOn=":scala.tools.eclipse.codeanalysis.CodeAnalysisExtension"/>
-               </appinfo>
+               </appInfo>
             </annotation>
          </attribute>
          <attribute name="msgPattern" type="string" use="required">
@@ -111,36 +112,36 @@
    </element>
 
    <annotation>
-      <appinfo>
+      <appInfo>
          <meta.section type="since"/>
-      </appinfo>
+      </appInfo>
       <documentation>
-         2.0.0
+         2.1.0
       </documentation>
    </annotation>
 
    <annotation>
-      <appinfo>
+      <appInfo>
          <meta.section type="examples"/>
-      </appinfo>
+      </appInfo>
       <documentation>
          For an example, see the UnusedImports analyzer that is part of the Scala IDE.
       </documentation>
    </annotation>
 
    <annotation>
-      <appinfo>
+      <appInfo>
          <meta.section type="apiinfo"/>
-      </appinfo>
+      </appInfo>
       <documentation>
          [Enter API information here.]
       </documentation>
    </annotation>
 
    <annotation>
-      <appinfo>
+      <appInfo>
          <meta.section type="implementation"/>
-      </appinfo>
+      </appInfo>
       <documentation>
          [Enter information about supplied implementation of this extension point.]
       </documentation>

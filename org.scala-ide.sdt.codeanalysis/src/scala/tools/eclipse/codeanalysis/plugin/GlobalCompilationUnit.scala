@@ -1,5 +1,4 @@
-package scala.tools.eclipse
-package codeanalysis.plugin
+package scala.tools.eclipse.codeanalysis.plugin
 
 import scala.tools.nsc.Global
 

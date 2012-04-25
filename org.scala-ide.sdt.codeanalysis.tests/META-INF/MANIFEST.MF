@@ -6,7 +6,7 @@ Bundle-Version: 2.1.0.qualifier
 Bundle-Vendor: scala-ide.org
 Bundle-RequiredExecutionEnvironment: J2SE-1.5
 Bundle-ClassPath: .
-Require-Bundle:
+Require-Bundle: 
  org.eclipse.core.expressions,
  org.eclipse.core.filesystem,
  org.eclipse.core.resources,
@@ -47,7 +47,7 @@ Require-Bundle:
  org.scala-ide.sdt.core,
  org.scala-ide.sdt.codeanalysis,
  org.scala-ide.sdt.core.tests
-Import-Package:
+Import-Package: 
  com.ibm.icu.text;apply-aspects:=false;org.eclipse.swt.graphics;apply-aspects:=false,
  scala.tools.eclipse.contribution.weaving.jdt;apply-aspects:=false,
  scala.tools.eclipse.contribution.weaving.jdt.builderoptions;apply-aspects:=false,

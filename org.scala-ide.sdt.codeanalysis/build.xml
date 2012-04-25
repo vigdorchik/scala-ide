@@ -1,0 +1,6 @@
+<project name="Scala Code Analysis Development Plugin" basedir="." default="jar">
+	<target name="jar">
+	    <jar destfile="target/code-analysis-development-plugin.jar" basedir="target/classes" includes="scala/tools/eclipse/codeanalysis/plugin/*"/>
+	    <jar destfile="target/code-analysis-development-plugin.jar" basedir="." includes="scalac-plugin.xml" update="true"/>
+	</target>
+</project>
