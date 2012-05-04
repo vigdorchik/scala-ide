@@ -12,25 +12,32 @@ import scala.tools.eclipse.codeanalysis.plugin.CodeAnalyzer
 import scala.tools.nsc.util.Position
 import scala.tools.eclipse.codeanalysis.plugin.CodeAnalyzer
 
-class NonLocalReturn extends CodeAnalyzer {
+class UnamedBooleanArgs extends CodeAnalyzer {
 
   def analyze(param: GlobalCompilationUnit, msg: String) = {
 
-    import param.global
-
     val hits = new collection.mutable.ListBuffer[Position]
 
-    val traverser = new global.Traverser {
+    import param.global._
 
-      def isNonLocalReturn(ret: global.Return) = {
-        ret.symbol != currentOwner || currentOwner.isLazy
-      }
+    def hasBoolTpe(t: Tree) = t match {
+      case Literal(Constant(true | false)) => true
+      case _ => false
+    }
+    
+    val traverser = new Traverser {
 
-      override def traverse(t: global.Tree) = {
+      override def traverse(t: Tree) = {
         t match {
-          case t: global.Return =>
-            if(isNonLocalReturn(t)) {
-              hits += t.pos
+          case Apply(fun: RefTree, args) 
+              if !fun.symbol.isJavaDefined && args.exists(hasBoolTpe) =>
+            (t :: args).sliding(2) foreach {
+              case Seq(pred, arg) if hasBoolTpe(arg) =>
+                val src = t.pos.source.content.slice(pred.pos.point, arg.pos.point)
+                if(!src.contains('=')) {
+                  hits += arg.pos
+                }
+              case _ => ()
             }
           case _ => ()
         }

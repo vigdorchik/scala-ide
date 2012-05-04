@@ -29,6 +29,16 @@
           msgPattern="println called">
     </analyzer>
     <analyzer
+          class="scala.tools.eclipse.codeanalysis.analyzers.UnamedBooleanArgs"
+          id="org.scala-ide.sdt.codeanalysis.nonnamedbooleanargs"
+          name="Unnamed Boolean Args"
+          msgPattern="Boolean arguments should be named">
+       <marker
+             id="org.scala-ide.sdt.codeanalysis.unnamedBooleanArgument"
+             severity="0">
+       </marker>
+    </analyzer>
+    <analyzer
           class="scala.tools.eclipse.codeanalysis.analyzers.UnnecessaryPatternMatches"
           id="org.scala-ide.sdt.codeanalysis.UnnecessaryPatternMatches"
           name="Unnecessary Pattern Match"
@@ -62,10 +72,28 @@
     </persistent>
  </extension>
  <extension
+       id="unnamedBooleanArgument"
+       name="Scala Code Analysis"
+       point="org.eclipse.core.resources.markers">
+    <super
+          type="org.scala-ide.sdt.codeanalysis.scalaCodeAnalysisProblem">
+    </super>
+    <persistent
+          value="true">
+    </persistent>
+ </extension>
+ <extension
        point="org.eclipse.ui.ide.markerResolution">
     <markerResolutionGenerator
           class="scala.tools.eclipse.codeanalysis.quickfixes.UnnecessaryPatternMatchMarkerResolutionGenerator"
           markerType="org.scala-ide.sdt.codeanalysis.unnecessaryPatternMatch">
+    </markerResolutionGenerator>
+ </extension>
+ <extension
+       point="org.eclipse.ui.ide.markerResolution">
+    <markerResolutionGenerator
+          class="scala.tools.eclipse.codeanalysis.quickfixes.UnnamedBooleanArgumentMarkerResolutionGenerator"
+          markerType="org.scala-ide.sdt.codeanalysis.unnamedBooleanArgument">
     </markerResolutionGenerator>
  </extension>
  <extension

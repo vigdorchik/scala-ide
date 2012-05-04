@@ -64,7 +64,8 @@ object CodeAnalysisExtensionPoint {
           case EclipseResource(file: IFile) =>
             if(CodeAnalysisPreferences.isEnabledForProject(file.getProject, analyzerId)) {
               val severity = CodeAnalysisPreferences.getSeverityForProject(file.getProject, analyzerId)
-              addMarker(file, markerType, msg, pos.line, severity)
+              val length = pos.source.identifier(pos).map(_.length).getOrElse(0)
+              addMarker(file, markerType, msg, pos.line, pos.point, length, severity)
             }
         }
         true
@@ -72,10 +73,12 @@ object CodeAnalysisExtensionPoint {
     }
   }
 
-  private def addMarker(file: IFile, markerType: String, message: String, lineNumber: Int, severity: Int) {
+  private def addMarker(file: IFile, markerType: String, message: String, lineNumber: Int, offset: Int, length: Int, severity: Int) {
     val marker = file.createMarker(markerType)
     marker.setAttribute(IMarker.MESSAGE, message)
     marker.setAttribute(IMarker.SEVERITY, severity)
     marker.setAttribute(IMarker.LINE_NUMBER, if (lineNumber == -1) 1 else lineNumber)
+    marker.setAttribute(IMarker.CHAR_START, offset)
+    marker.setAttribute(IMarker.CHAR_END, offset + math.max(length, 1))
   }
 }

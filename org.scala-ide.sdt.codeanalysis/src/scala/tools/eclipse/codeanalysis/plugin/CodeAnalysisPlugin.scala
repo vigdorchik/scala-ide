@@ -1,10 +1,10 @@
 package scala.tools.eclipse.codeanalysis.plugin
 
 import java.io.File
-import java.net.{URLClassLoader, URL}
+import java.net.{ URLClassLoader, URL }
 
-import scala.tools.nsc.plugins.{PluginComponent, Plugin}
-import scala.tools.nsc.{Phase, Global}
+import scala.tools.nsc.plugins.{ PluginComponent, Plugin }
+import scala.tools.nsc.{ Phase, Global }
 
 class CodeAnalysisPlugin(val global: Global) extends Plugin {
 
@@ -28,27 +28,12 @@ class CodeAnalysisPlugin(val global: Global) extends Plugin {
 
       def apply(compilationUnit: global.CompilationUnit) {
 
-        val classLoader = getClassLoader()
-
-        val pluginXml = classLoader.getResource("plugin.xml")
-
-        val xmlRoot = xml.XML.load(pluginXml)
-        val (analyzerClassNames, analyzerMessage) = {
-          val analyzer = xmlRoot \\ "analyzer"
-          (analyzer \\ "@class" map (_.text), analyzer \\ "@msgPattern" map (_.text))
-        }
-
-        val analyzers = analyzerClassNames map { name =>
-          val clazz = classLoader.loadClass(name)
-          clazz.newInstance.asInstanceOf[CodeAnalyzer]
-        }
-
         val cu = new GlobalCompilationUnit {
           val global: CodeAnalysisPlugin.this.global.type = CodeAnalysisPlugin.this.global
           val unit = compilationUnit
         }
 
-        (analyzers zip analyzerMessage) foreach {
+        analyzers foreach {
           case (analyzer, msgPattern) =>
             analyzer.analyze(cu, msgPattern) foreach {
               case analyzer.Marker(message, pos) =>
@@ -56,32 +41,53 @@ class CodeAnalysisPlugin(val global: Global) extends Plugin {
             }
         }
       }
+    }
+  }
+  
+  private lazy val analyzers = {
 
-      private def getClassLoader() = {
-        val thisClassLoader = getClass.getClassLoader
-        val jarHasPluginXml = thisClassLoader.getResource("plugin.xml") != null
-        if (jarHasPluginXml) {
-          // This means we're in "production" mode where all the required classes
-          // and the plugin.xml are bundled with the compiler plug-in jar.
-          thisClassLoader
-        } else {
+    val classLoader = getClassLoader()
 
-          // We're running in development mode, so we need to get the directory where
-          // the codeanalysis project is located.
-          val baseDirectoryUrl = {
-            // The `code-analysis-development-plugin.jar` is in the `target` directory
-            val codeSource = getClass.getProtectionDomain.getCodeSource
-            new File(codeSource.getLocation.toURI.getPath).getParentFile.getParentFile.toURI.toURL
-          }
+    // For running without Eclipse, allow to pass the
+    // plug-ins and severity via the plug-in options.
 
-          // For the `plugin.xml`
-          val pluginXmlUrl = new URL(baseDirectoryUrl.toString)
-          // For the compiled classes of the codeanalysis project
-          val classesUrl   = new URL(baseDirectoryUrl.toString + "target/classes/")
+    val pluginXml = classLoader.getResource("plugin.xml")
 
-          new URLClassLoader(Array(classesUrl, pluginXmlUrl), thisClassLoader)
-        }
+    val xmlRoot = xml.XML.load(pluginXml)
+    val (analyzerClassNames, analyzerMessage) = {
+      val analyzer = xmlRoot \\ "analyzer"
+      (analyzer \\ "@class" map (_.text), analyzer \\ "@msgPattern" map (_.text))
+    }
+
+    analyzerClassNames map { name =>
+      val clazz = classLoader.loadClass(name)
+      clazz.newInstance.asInstanceOf[CodeAnalyzer]
+    } zip analyzerMessage
+  }
+
+  private def getClassLoader() = {
+    val thisClassLoader = getClass.getClassLoader
+    val jarHasPluginXml = thisClassLoader.getResource("plugin.xml") != null
+    if (jarHasPluginXml) {
+      // This means we're in "production" mode where all the required classes
+      // and the plugin.xml are bundled with the compiler plug-in jar.
+      thisClassLoader
+    } else {
+
+      // We're running in development mode, so we need to get the directory where
+      // the codeanalysis project is located.
+      val baseDirectoryUrl = {
+        // The `code-analysis-development-plugin.jar` is in the `target` directory
+        val codeSource = getClass.getProtectionDomain.getCodeSource
+        new File(codeSource.getLocation.toURI.getPath).getParentFile.getParentFile.toURI.toURL
       }
+
+      // For the `plugin.xml`
+      val pluginXmlUrl = new URL(baseDirectoryUrl.toString)
+      // For the compiled classes of the codeanalysis project
+      val classesUrl = new URL(baseDirectoryUrl.toString + "target/classes/")
+
+      new URLClassLoader(Array(classesUrl, pluginXmlUrl), thisClassLoader)
     }
   }
 }

@@ -19,20 +19,18 @@ class UnnecessaryPatternMatchMarkerResolutionGenerator extends IMarkerResolution
 
   def getResolutions(marker: IMarker) = {
 
-    val resolution = new IMarkerResolution2 {
-      def getImage = JavaPluginImages.get(JavaPluginImages.IMG_CORRECTION_CHANGE)
-      def getDescription = null
-      def getLabel = marker.getAttribute(IMarker.MESSAGE, "<could not find marker message>")
+    val resolution = new AbstractMarkerResolution(marker) {
       def run(marker: IMarker) {
-        val s = ScalaSourceFile
-        s.createFromPath(marker.getResource.getFullPath.toString) foreach { scalaSourceFile =>
+        val scalaSourceFile = ScalaSourceFile.createFromPath(marker.getResource.getFullPath.toString)
+
+        scalaSourceFile foreach { scalaSourceFile =>
 
           val changes = scalaSourceFile.withSourceFile { (sourceFile, compiler) =>
 
             val r = new EliminateMatch with InteractiveScalaCompiler { val global = compiler }
 
             val selection = MarkerUtil.getLineNumberFromMarker(marker) match {
-              case line: Integer =>
+              case Some(line) =>
                 val start = sourceFile.lineToOffset(line)
                 val end = sourceFile.lineToOffset(line + 1) - 1 /*without any kind of newline*/
                 new r.FileSelection(sourceFile.file, r.global.body(sourceFile), start, end)

@@ -14,19 +14,42 @@ import org.eclipse.ui.texteditor.IDocumentProvider
 
 object MarkerUtil {
 
-  def getLineNumberFromMarker(marker: IMarker) = {
-    EditorHelpers.withCurrentEditor { editor: ScalaSourceFileEditor =>
+  def getOffsetAndLengthFromMarker(marker: IMarker): Option[(Int, Int)] = {
+    
+    getDocumentAndPosFromMarker(marker) map {
+      case (_, pos) =>
+        (pos.getOffset -> (pos.getOffset + pos.getLength))
+    } orElse {
+      marker.getAttribute(IMarker.CHAR_START) -> marker.getAttribute(IMarker.CHAR_END) match {
+        case (start: java.lang.Integer, end: java.lang.Integer) => Some(start, end)
+        case _ => None
+      }
+    }  
+  }
+  
+  def getLineNumberFromMarker(marker: IMarker): Option[Int] = {
+    
+    getDocumentAndPosFromMarker(marker) map {
+      case (doc, pos) => doc.getLineOfOffset(pos.getOffset) + 1
+    } orElse {
+      marker.getAttribute(IMarker.LINE_NUMBER) match {
+        case i: java.lang.Integer => Some(i)
+        case _ => None
+      }
+    }
+  }
+  
+  private def getDocumentAndPosFromMarker(marker: IMarker) = {
+    EditorHelpers.withCurrentEditor { editor =>
       Option(editor.getDocumentProvider) flatMap { documentProvider =>
         documentProvider.getAnnotationModel(editor.getEditorInput) match {
           case model: AbstractMarkerAnnotationModel =>
-            Option(model.getMarkerPosition(marker)) filterNot (_.isDeleted) flatMap { pos =>
-              Option(documentProvider.getDocument(editor.getEditorInput)) map (_.getLineOfOffset(pos.getOffset) + 1)
+            Option(model.getMarkerPosition(marker)) filterNot (_.isDeleted) map { pos =>
+              documentProvider.getDocument(editor.getEditorInput) -> pos
             }
           case _ => None
         }
       }
-    } getOrElse {
-      marker.getAttribute(IMarker.LINE_NUMBER)
     }
   }
 }
