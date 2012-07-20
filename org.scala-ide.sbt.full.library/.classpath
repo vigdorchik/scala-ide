@@ -1,23 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry exported="true" kind="lib" path="lib/api_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/classfile_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/classpath_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/collections_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/compile_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/control_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/incremental-compiler_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/interface_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/io_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/ivy_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/ivy.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/classpath.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/logging.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/io.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/control.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/classfile.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/process.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/relation.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/interface.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/persist.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/api.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/compiler-integration.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/jline.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/launcher_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/launcher-interface_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/logging_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/persist_2.9.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/precompiled-2.9.1-2_9_1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/process_2.9.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/incremental-compiler.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/compile.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/compiler-interface.jar"/>
 	<classpathentry exported="true" kind="lib" path="lib/sbinary_2.9.1.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
