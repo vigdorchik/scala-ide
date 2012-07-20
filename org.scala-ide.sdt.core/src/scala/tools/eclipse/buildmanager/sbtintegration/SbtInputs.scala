@@ -26,7 +26,7 @@ class SbtInputs(sourceFiles: Seq[File], project: ScalaProject, javaMonitor: SubM
       if (f.isFile)
         Maybe.just(Analysis.Empty)
       else
-        allProjects.find(_.outputFolders.map(_.toFile) contains f) map (_.buildManager) match { 
+        allProjects.find(_.sourceOutputFolders.map(_._2.getLocation.toFile) contains f) map (_.buildManager) match { 
           case Some(sbtManager: EclipseSbtBuildManager) => Maybe.just(sbtManager.latestAnalysis)
           case _ => Maybe.just(Analysis.Empty)
         }
