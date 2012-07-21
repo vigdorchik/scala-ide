@@ -64,7 +64,7 @@ class SbtInputs(sourceFiles: Seq[File], project: ScalaProject, javaMonitor: SubM
       val libClasses = plugin.libClasses map (_.toFile) getOrElse (throw new RuntimeException("scala-library not found"))
       val compilerClasses = plugin.compilerClasses map (_.toFile) getOrElse (throw new RuntimeException("scala-compiler not found"))
       val reflectClasses = plugin.reflectClasses map (_.toFile)
-      val scalaLoader = new URLClassLoader((Array(libClasses, compilerClasses) ++ reflectClasses) map (_.toURI.toURL), getClass.getClassLoader.getParent)
+      val scalaLoader = getClass.getClassLoader
       val scalaInstance = new ScalaInstance(plugin.scalaVer, scalaLoader, libClasses, compilerClasses, reflectClasses.toList, None)
       val compilerInterface = plugin.sbtCompilerInterface map (_.toFile) getOrElse (throw new RuntimeException("compiler-interface not found"))
       IC.newScalaCompiler(scalaInstance, compilerInterface, ClasspathOptions.boot, logger)
