@@ -9,7 +9,7 @@ import scala.tools.eclipse.util.EclipseResource
 
 /**  An Sbt Reporter that forwards to an underlying [[BuildReporter]]
  */
-private[sbtintegration] class SbtBuildReporter(underlying: BuildReporter) extends xsbti.Reporter {
+private[sbtintegration] class SbtBuildReporter(underlying: BuildReporter) extends xsbti.ExtendedReporter {
   val probs = new mutable.ArrayBuffer[xsbti.Problem]
   
   def reset() = {
@@ -20,6 +20,9 @@ private[sbtintegration] class SbtBuildReporter(underlying: BuildReporter) extend
   def hasWarnings() = underlying.hasWarnings
   def printSummary() {} //TODO
   def problems: Array[xsbti.Problem] = probs.toArray
+  def comment(pos: xsbti.Position, msg: String) {
+    underlying.comment(toScalaPosition(pos), msg)
+  }
 
   def m2o[T](m: xsbti.Maybe[T]): Option[T] = if (m.isEmpty) None else Some(m.get)
   def toScalaPosition(pos0: xsbti.Position): Position =
