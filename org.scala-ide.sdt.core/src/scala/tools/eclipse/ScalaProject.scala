@@ -335,10 +335,10 @@ class ScalaProject private (val underlying: IProject) extends ClasspathManagemen
     }
   }
 
-  private def refreshOutput: Unit = {
-    val res = plugin.workspaceRoot.findMember(javaProject.getOutputLocation)
-    if (res ne null)
-      res.refreshLocal(IResource.DEPTH_INFINITE, null)
+  private def refreshOutputFolders(): Unit = {
+    sourceOutputFolders foreach {
+      case (_, binFolder) => binFolder.refreshLocal(IResource.DEPTH_INFINITE, null)
+    }
   }
 
   // TODO Per-file encodings
@@ -532,7 +532,7 @@ class ScalaProject private (val underlying: IProject) extends ClasspathManagemen
 
     clearBuildProblemMarker()
     buildManager.build(addedOrUpdated, removed, monitor)
-    refreshOutput
+    refreshOutputFolders()
 
     // Already performs saving the dependencies
     
