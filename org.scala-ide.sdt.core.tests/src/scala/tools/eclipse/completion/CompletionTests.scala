@@ -228,7 +228,7 @@ class CompletionTests {
         assertEquals("There is only one completion location", 0, index)
         assertTrue("The completion should return java.util", completions.exists(
           _ match {
-            case CompletionProposal(MemberKind.Package, _, "util", _, _, _, _, _, _, _, _, _) =>
+            case CompletionProposal(MemberKind.Package, _, "util", _, _, _, _, _, _, _, _, _, _) =>
               true
             case _ =>
               false

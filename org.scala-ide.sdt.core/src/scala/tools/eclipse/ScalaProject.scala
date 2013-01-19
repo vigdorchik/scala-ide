@@ -17,7 +17,8 @@ import scala.tools.eclipse.ui.PartAdapter
 import scala.tools.eclipse.util.{Cached, EclipseResource, Trim, Utils}
 import scala.tools.eclipse.util.EclipseUtils.workspaceRunnableIn
 import scala.tools.eclipse.util.SWTUtils.asyncExec
-import scala.tools.nsc.{Settings, MissingRequirementError}
+import scala.tools.nsc.MissingRequirementError
+import scala.tools.nsc.Settings
 import scala.tools.nsc.util.BatchSourceFile
 import scala.tools.nsc.util.SourceFile
 
@@ -99,6 +100,7 @@ class ScalaProject private (val underlying: IProject) extends ClasspathManagemen
         val settings = ScalaPlugin.defaultScalaSettings
         settings.printtypes.tryToSet(Nil)
         initializeCompilerSettings(settings, isPCSetting(settings))
+
         val pc = new ScalaPresentationCompiler(ScalaProject.this, settings)
         logger.debug("Presentation compiler classpath: " + pc.classPath)
         pc.askOption(() => pc.initializeRequiredSymbols())
@@ -609,6 +611,7 @@ class ScalaProject private (val underlying: IProject) extends ClasspathManagemen
       val settings = ScalaPlugin.defaultScalaSettings(msg => settingsError(IMarker.SEVERITY_ERROR, msg, null))
       clearSettingsErrors()
       initializeCompilerSettings(settings, _ => true)
+
       // source path should be emtpy. The build manager decides what files get recompiled when.
       // if scalac finds a source file newer than its corresponding classfile, it will 'compileLate'
       // that file, using an AbstractFile/PlainFile instead of the EclipseResource instance. This later

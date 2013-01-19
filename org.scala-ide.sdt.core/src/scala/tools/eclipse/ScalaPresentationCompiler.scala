@@ -10,9 +10,9 @@ import scala.collection.mutable
 import scala.collection.mutable.{ ArrayBuffer, SynchronizedMap }
 import org.eclipse.jdt.core.compiler.IProblem
 import org.eclipse.jdt.internal.compiler.problem.{ DefaultProblem, ProblemSeverities }
-import scala.tools.nsc.Settings
 import scala.tools.nsc.interactive.{ Global, InteractiveReporter, Problem }
 import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.Settings
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.util.{ BatchSourceFile, Position, SourceFile }
 import scala.tools.eclipse.javaelements.{
@@ -33,7 +33,7 @@ import scala.tools.nsc.io.VirtualFile
 import scala.tools.nsc.interactive.MissingResponse
 import scala.tools.nsc.ast.parser.Parsers
 
-class ScalaPresentationCompiler(project: ScalaProject, settings: Settings)
+class ScalaPresentationCompiler(val project: ScalaProject, override val settings: Settings)
   extends Global(settings, new ScalaPresentationCompiler.PresentationReporter, project.underlying.getName)
   with ScalaStructureBuilder
   with ScalaIndexBuilder
@@ -44,7 +44,10 @@ class ScalaPresentationCompiler(project: ScalaProject, settings: Settings)
   with JVMUtils
   with LocateSymbol
   with HasLogger
-  with SymbolsCompatibility { self =>
+  with SymbolsCompatibility
+  with Scaladoc { self =>
+
+  override def forScaladoc = true
 
   def presentationReporter = reporter.asInstanceOf[ScalaPresentationCompiler.PresentationReporter]
   presentationReporter.compiler = this
@@ -304,6 +307,7 @@ class ScalaPresentationCompiler(project: ScalaProject, settings: Settings)
     } yield for { (name, sym) <- names.zip(syms) } yield "%s: %s".format(name, sym.tpe)
 
     val contextString = contextInfo.map(_.mkString("(", ", ", ")")).mkString("")
+    val docFun = () => documentation(sym, sym.enclClass) // TODO: proper site. How?
 
     import scala.tools.eclipse.completion.HasArgs
     CompletionProposal(kind,
@@ -317,7 +321,8 @@ class ScalaPresentationCompiler(project: ScalaProject, settings: Settings)
       sym.isJavaDefined,
       paramNames,
       sym.fullName,
-      false)
+      false,
+      docFun)
   }
 
   override def inform(msg: String): Unit =

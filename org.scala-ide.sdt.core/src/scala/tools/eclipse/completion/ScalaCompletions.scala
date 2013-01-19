@@ -122,7 +122,8 @@ class ScalaCompletions extends HasLogger {
               true,
               List(),
               fullyQualifiedName,
-              true))
+              true,
+              () => None))
           }
         }
       }

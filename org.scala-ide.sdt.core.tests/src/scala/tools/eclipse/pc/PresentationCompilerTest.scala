@@ -192,6 +192,37 @@ class FreshFile {
 
   }
 
+  @Test
+  def libraryDocumentation(): Unit =
+    project.withPresentationCompiler { compiler =>
+      import compiler.{ reload => _, parseAndEnter => _, _ }
+      import definitions.ListClass
+      val unit = ask { () => findCompilationUnit(ListClass).get }
+      reload(unit)
+      parseAndEnter(unit)
+      withSourceFile(unit) { (source, _) =>
+        val documented = ask { () =>
+          // Only check if doc comment is present in the class itself.
+          // This doesn't include symbols that are inherited from documented symbols.
+          // An alternative would be to check allOverriddenSymbols, but
+          // that would require getting sourceFiles for those as well. I'm a bit lazy :)
+          ListClass.info.decls filter { sym =>
+            unitOf(source).body exists {
+              case DocDef(_, defn: DefTree) if defn.name eq sym.name => true
+              case _ => false
+            }
+          }
+        }
+        Assert.assertTrue("Found documented declarations", !documented.isEmpty)
+        for (sym <- documented) {
+           Assert.assertTrue(s"Succesfully retrieve $sym documentation",
+                             documentation(sym, sym.enclClass).isDefined)
+        }
+      }
+    } {
+      throw new RuntimeException("shouldn't happen")
+    }
+
   // We don't have dependent method types in Scala 2.9.x so this is a work-around.
   private trait CompilerAndTree {
     val compiler: ScalaPresentationCompiler

@@ -73,7 +73,7 @@ class ScalaDeclarationHyperlinkComputer extends HasLogger {
               filteredSyms.foldLeft(List[IHyperlink]()) { (links, sym) =>
                 if (sym.isJavaDefined) links
                 else
-                  DeclarationHyperlinkFactory.create(Hyperlink.withText("Open Declaration (%s)".format(sym.toString)), icu, sym, wordRegion).toList ::: links
+                  DeclarationHyperlinkFactory.create(Hyperlink.withText("Open Declaration (%s)".format(sym.toString)), sym, wordRegion).toList ::: links
               })
           }
         }.flatten.headOption
