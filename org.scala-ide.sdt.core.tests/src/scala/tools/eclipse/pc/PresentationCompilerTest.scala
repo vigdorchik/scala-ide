@@ -177,8 +177,8 @@ class FreshFile {
     project.withPresentationCompiler { compiler =>
       import compiler.{ reload => _, parseAndEnter => _, _ }
       import definitions.ListClass
-      val unit = ask { () => findCompilationUnit(ListClass).get }
-      reload(unit)
+      val unit = findCompilationUnit(ListClass).get
+      reload(unit.asInstanceOf[ScalaCompilationUnit])
       parseAndEnter(unit)
       unit.doWithSourceFile { (source, _) =>
         val documented = ask { () =>
