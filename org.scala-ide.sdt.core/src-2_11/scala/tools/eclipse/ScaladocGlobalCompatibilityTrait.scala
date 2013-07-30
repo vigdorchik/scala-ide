@@ -1,10 +1,17 @@
 package scala.tools.eclipse
 
 import scala.tools.nsc.interactive.Global
+import scala.tools.nsc.interactive
 import scala.tools.nsc.doc.{ScaladocGlobalTrait => _, _}
 import scala.tools.nsc.symtab.BrowsingLoaders
-import scala.tools.nsc.interactive.InteractiveScaladocAnalyzer
 import scala.tools.nsc.interactive.InteractiveReporter
+
+trait InteractiveScaladocAnalyzer extends interactive.InteractiveAnalyzer with ScaladocAnalyzer {
+    val global : Global
+    override def newTyper(context: Context) = new Typer(context) with InteractiveTyper with ScaladocTyper {
+      override def canAdaptConstantTypeToLiteral = false
+    }
+  }
 
 protected class ScaladocEnabledGlobal(settings:scala.tools.nsc.Settings, compilerReporter:InteractiveReporter, name:String) extends Global(settings, compilerReporter, name) {
   override lazy val analyzer = new {
