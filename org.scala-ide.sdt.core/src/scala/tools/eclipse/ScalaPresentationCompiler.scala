@@ -45,7 +45,6 @@ import org.eclipse.core.resources.IFile
 import org.eclipse.jdt.internal.core.util.Util
 import scala.tools.eclipse.compiler.CompilerApiExtensions
 
-
 class ScalaPresentationCompiler(val project: ScalaProject, settings: Settings) extends {
   /*
    * Lock object for protecting compiler names. Names are cached in a global `Array[Char]`
@@ -56,7 +55,8 @@ class ScalaPresentationCompiler(val project: ScalaProject, settings: Settings) e
    */
   private val nameLock = new Object
 
-} with Global(settings, new ScalaPresentationCompiler.PresentationReporter, project.underlying.getName)
+} with ScaladocEnabledGlobal(settings, new ScalaPresentationCompiler.PresentationReporter, project.underlying.getName)
+  with ScaladocGlobalCompatibilityTrait
   with ScalaStructureBuilder
   with ScalaIndexBuilder
   with ScalaMatchLocator
@@ -268,6 +268,7 @@ class ScalaPresentationCompiler(val project: ScalaProject, settings: Settings) e
 
   /** Atomically load a list of units in the current presentation compiler. */
   def askReload(units: List[InteractiveCompilationUnit]): Response[Unit] = {
+    global.clearDocComments()
     withResponse[Unit] { res => askReload(units.map(_.sourceFile), res) }
   }
 
@@ -409,7 +410,7 @@ class ScalaPresentationCompiler(val project: ScalaProject, settings: Settings) e
       } else scalaParamNames
     }
 
-    def docFun() = browserInput(sym, sym.enclClass) // TODO: proper site. How?
+    def docFun() = askOption{ () => browserInput(sym, tpe.typeSymbol) }.getOrElse(None)
 
     CompletionProposal(
       kind,
