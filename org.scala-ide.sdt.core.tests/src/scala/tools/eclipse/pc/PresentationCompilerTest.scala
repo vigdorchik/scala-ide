@@ -175,7 +175,8 @@ class FreshFile {
   @Test
   def libraryDocumentation(): Unit =
     project.presentationCompiler { compiler =>
-      import compiler.{ reload => _, parseAndEnter => _, _ }
+      import compiler._
+      import PresentationCompilerTest.{ reload, parseAndEnter }
       import definitions.ListClass
       val unit = findCompilationUnit(ListClass).get
       reload(unit.asInstanceOf[ScalaCompilationUnit])
