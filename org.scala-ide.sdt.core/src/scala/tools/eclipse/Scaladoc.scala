@@ -101,20 +101,18 @@ trait Scaladoc extends MemberLookupBase with CommentFactoryBase { this: ScalaPre
       bodies match {
         case Nil => NodeSeq.Empty
         case _ =>
-          <p>
-            {
-              val first = if (!caption.isEmpty) <h3>{ caption }</h3> else NodeSeq.Empty
-              val last = bodies.flatMap(bodyToHtml).flatten
-              first ++ last
-            }
-          </p>
+          val first = if (!caption.isEmpty) <h3>{ caption }</h3> else NodeSeq.Empty
+          val last = bodies.flatMap(bodyToHtml).flatten
+          paragraph(first ++ last)
        }
+
+    def paragraph(nodes: NodeSeq): NodeSeq = <p>{ nodes }</p>
 
     def bodyToHtml(body: Body): NodeSeq = body.blocks flatMap blockToHtml
 
     def blockToHtml(block: comment.Block): NodeSeq = block match {
       case Title(in, _) => <h6>{ inlineToHtml(in) }</h6>
-      case Paragraph(in) => <p>{ inlineToHtml(in) }</p>
+      case Paragraph(in) => paragraph(inlineToHtml(in))
       case Code(data) => <br/><pre><i>{ scala.xml.Text(data) }</i></pre><br/>
       case UnorderedList(items) => <ul>{ listItemsToHtml(items) }</ul>
       case OrderedList(items, listStyle) => <ol class={ listStyle }>{ listItemsToHtml(items) }</ol>
@@ -157,7 +155,7 @@ trait Scaladoc extends MemberLookupBase with CommentFactoryBase { this: ScalaPre
           <h3>{ header }</h3>
 
       val mainHtml = List(
-        bodyToHtml(comment.body),
+        paragraph(bodyToHtml(comment.body)),
         bodiesToHtml("Example" + (if (comment.example.length > 1) "s" else ""), comment.example),
         bodiesToHtml("Version", comment.version.toList),
         bodiesToHtml("Since", comment.since.toList),
